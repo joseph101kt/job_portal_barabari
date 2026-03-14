@@ -1,7 +1,13 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "./src"
+  "name": "@my-app/features",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
   },
-  "include": ["src", "nativewind-env.d.ts"]
+  "peerDependencies": {
+    "react": "*"
+  }
 }
