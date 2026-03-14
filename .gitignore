@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Expo / React Native
+.expo/
+dist/
+android/
+ios/
+*.jks
+*.p12
+*.key
+*.mobileprovision
+
+# Next.js / Turbo
+.next/
+out/
+.turbo/
+
+# Build files
+*.tsbuildinfo
+*.log
+
+# Environment variables
+.env*.local
+
+# OS files
+.DS_Store
+Thumbs.db
