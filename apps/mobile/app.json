@@ -22,7 +22,14 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "INTERNET"
+      ],
+      "predictiveBackGestureEnabled": false,
+      "package": "com.joseph_k.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -31,6 +38,12 @@
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ceee6f45-f5c1-41b9-ac1c-cbb3eb46b5ff"
+      }
+    }
   }
 }

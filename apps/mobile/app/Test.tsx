@@ -18,13 +18,10 @@ import {
   typography,
   spacing,
 } from '@my-app/ui'; // update this import path to match your workspace alias
-
+import { VideoCallScreen } from '@my-app/features'; // Adjust alias if needed
+import { router, useLocalSearchParams, useRouter } from 'expo-router'; // Add useRouter here
 // ─── Feature handlers (fill these in as you build each phase) ───────────────
 
-function handleStartCall() {
-  // Phase 3 — LiveKit
-  Alert.alert('LiveKit', 'Connect to room here');
-}
 
 function handleRunOCR() {
   // Phase 4 — Tesseract OCR
@@ -51,6 +48,7 @@ function handleChatTest() {
 export default function TestScreen() {
   const [inputValue, setInputValue] = useState('');
   const [inputError, setInputError] = useState('');
+  const [roomName, setRoomName] = useState('test-room'); // State for room input
 
   function validateInput() {
     if (!inputValue.trim()) {
@@ -60,6 +58,15 @@ export default function TestScreen() {
       Alert.alert('Valid', inputValue);
     }
   }
+  
+  function handleStartCall() {
+  if (!roomName.trim()) {
+    Alert.alert('Error', 'Please enter a room name');
+    return;
+  }
+  // Navigate to the dynamic route: apps/mobile/app/call/[room].tsx
+  router.push(`/call/${roomName.trim()}`);
+}
 
   return (
     <PageLayout
@@ -82,21 +89,21 @@ export default function TestScreen() {
 
       {/* ── Feature buttons ── */}
       <Section title="Feature integration">
-        <View style={styles.buttonGrid}>
-          <Button
-            label="Start Call"
-            variant="primary"
-            size="md"
-            onPress={handleStartCall}
-            fullWidth
-          />
-          <Button
-            label="Run OCR"
-            variant="secondary"
-            size="md"
-            onPress={handleRunOCR}
-            fullWidth
-          />
+<View style={styles.buttonGrid}>
+    {/* Add this Input so you can name the room */}
+    <Input
+      label="Room Name"
+      placeholder="e.g. interview-101"
+      value={roomName}
+      onChangeText={setRoomName}
+    />
+    <Button
+      label="Start Call"
+      variant="primary"
+      size="md"
+      onPress={handleStartCall}
+      fullWidth
+    />
           <Button
             label="Upload Resume"
             variant="outline"
