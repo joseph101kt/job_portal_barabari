@@ -1,7 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "./src"
+    "strict": true,
+    "types": ["node"],
+    "typeRoots": ["../../node_modules/@types"]
   },
-  "include": ["src", "nativewind-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

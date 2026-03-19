@@ -13,7 +13,7 @@
     "@expo/log-box": "^55.0.7",
     "@expo/metro-runtime": "~55.0.6",
     "@livekit/react-native": "^2.9.6",
-    "@livekit/react-native-expo-plugin": "^1.0.1",
+    "@livekit/react-native-expo-plugin": "^1.0.2",
     "@livekit/react-native-webrtc": "^137.0.2",
     "expo": "~55.0.6",
     "expo-av": "^16.0.8",

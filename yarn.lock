@@ -1370,6 +1370,11 @@
   resolved "https://registry.yarnpkg.com/@livekit/react-native-expo-plugin/-/react-native-expo-plugin-1.0.1.tgz#8472299b1b399209463347ed27de7b0f743d700d"
   integrity sha512-CSPjjzgDDlBH1ZyFyaw7/FW2Ql1S51eUkIxv/vjGwVshn+lUD6eQ9VgfUh7ha84itvjXi9X87FvP0XWKn9CiFQ==
 
+"@livekit/react-native-expo-plugin@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@livekit/react-native-expo-plugin/-/react-native-expo-plugin-1.0.2.tgz#d6df2cf441c98755e53d79e68b782af8155375bd"
+  integrity sha512-Crnht6xAlvbSo677oXFBMzS6I5lCMfCNNyLIs6bQZOwlwempz6tWj4CddRknqCCd/dvAyHCa1HwslqXpvGoSJA==
+
 "@livekit/react-native-webrtc@^137.0.2":
   version "137.0.2"
   resolved "https://registry.yarnpkg.com/@livekit/react-native-webrtc/-/react-native-webrtc-137.0.2.tgz#5fbd7876e6768a2247d04ef5653c373d92d74783"
