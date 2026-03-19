@@ -4,6 +4,7 @@
  * Integration playground — one button per feature.
  * Wire up each handler as you complete each phase.
  */
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import {
@@ -20,10 +21,10 @@ import {
 } from '@my-app/ui'; // update this import path to match your workspace alias
 
 // ─── Feature handlers (fill these in as you build each phase) ───────────────
+const router = useRouter();
 
 function handleStartCall() {
-  // Phase 3 — LiveKit
-  Alert.alert('LiveKit', 'Connect to room here');
+  router.push('/call');
 }
 
 function handleRunOCR() {

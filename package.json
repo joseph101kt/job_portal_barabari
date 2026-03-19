@@ -8,5 +8,15 @@
   ],
   "engines": {
     "node": ">=18"
-  }
+  },
+  "dependencies": {
+    "@config-plugins/react-native-webrtc": "^13.0.0",
+    "@livekit/react-native-expo-plugin": "^1.0.1",
+    "expo-av": "^16.0.8",
+    "expo-camera": "^55.0.9",
+    "expo": "~55.0.6",
+    "react": "19.2.0",
+    "react-native": "0.83.2"
+  },
+  "scripts": {}
 }
