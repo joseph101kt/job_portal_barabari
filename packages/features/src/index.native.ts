@@ -4,3 +4,5 @@ export { useRoomWeb } from './livekit/web';
 export * from './livekit/ui';
 
 export * from './ocr';
+
+export * from './ai'

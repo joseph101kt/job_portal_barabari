@@ -36,7 +36,7 @@ export default function TestScreen() {
           <Badge label="Phase 1 ✓"      variant="success" dot />
           <Badge label="OCR ✓"          variant="success" dot />
           <Badge label="PDF/DOCX ✓"     variant="success" dot />
-          <Badge label="AI pending"      variant="warning" dot />
+          <Badge label="AI ✓"      variant="success" dot />
           <Badge label="Calls pending"   variant="neutral" dot />
         </View>
       </Section>
@@ -58,13 +58,6 @@ export default function TestScreen() {
             variant="secondary"
             size="md"
             onPress={() => router.push('/call')}
-            fullWidth
-          />
-          <Button
-            label="AI Summary"
-            variant="outline"
-            size="md"
-            onPress={() => Alert.alert('AI', 'Coming soon')}
             fullWidth
           />
         </View>
