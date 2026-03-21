@@ -28,3 +28,22 @@ export type {
   Word,
   NormalizedWord,
 } from './core/pipeline'
+
+export {
+  PdfEngine,
+  useDocument,
+  useDocumentExtractor,
+  pickDocumentAsBuffer,
+  extractDocumentWeb,
+  extractDocumentNative,
+} from './core/pipeline'
+
+export type {
+  DocumentResult,
+  DocumentStatus,
+  DocumentEvent,
+  PickedDocument,
+  DocumentConfidence,
+} from './core/pipeline'
+
+export * from './core/pipeline'

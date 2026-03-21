@@ -30,3 +30,31 @@ export type {
 
 export type { OcrStatus, OcrResult, OcrEvent } from './useOcr'
 export type { PickedImage }                     from './useImagePicker'
+
+
+
+
+// ── Document (PDF + DOCX) ─────────────────────────────────────────────────────
+export { PdfEngine }            from './pdf'
+export { extractPdfWeb }        from './pdf'
+export { extractDocxWeb }       from './docx'
+export { extractDocxNative }    from './docx'
+export {
+  useDocument,
+  useDocumentExtractor,
+  pickDocumentAsBuffer,
+  extractDocumentWeb,
+  extractDocumentNative,
+  scoreConfidence,
+} from './document'
+ 
+// ── Document types ────────────────────────────────────────────────────────────
+export type {
+  DocumentSource, DocumentConfidence,
+  DocumentPage, DocumentResult, PickedDocument,
+  DocumentStatus, DocumentEvent,
+} from './document'
+
+export type {
+  PdfEngineProps,
+} from './pdf'
