@@ -9,7 +9,8 @@
     "paths": {
       "@my-app/ui": ["../../packages/ui/src/index.ts"],
       "@my-app/features": ["../../packages/features/src/index.native.ts"],
-      "@my-app/features/livekit/web": ["../../packages/features/src/livekit/web/index.ts"]
+      "@my-app/features/livekit/web": ["../../packages/features/src/livekit/web/index.ts"],
+      "@my-app/supabase": ["../../packages/supabase/src/index.ts"]
     }
   },
   "include": [

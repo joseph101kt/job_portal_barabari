@@ -3,11 +3,18 @@ import '../global.css';
 import { Platform } from 'react-native';
 import { configureAI } from '@my-app/features'
 
+import { initSupabase } from '@my-app/supabase'
+
 if (Platform.OS !== 'web') {
   const { registerGlobals } = require('@livekit/react-native');
   registerGlobals();
 }
 
+
+initSupabase(
+  process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 // apps/mobile/app/_layout.tsx
 //
@@ -16,15 +23,14 @@ if (Platform.OS !== 'web') {
 
 // Your actual values — hardcoded for now, move to .env before production
 configureAI({
-  url:     'https://ssstfxetlemoqrhwggej.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzc3RmeGV0bGVtb3FyaHdnZ2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzQ1ODEsImV4cCI6MjA4Nzk1MDU4MX0.cQyop8BxHwcHEVnqYn7tVkWTrdp2i3ad4KBLj-1VnlA',
+  url:     process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
 })
 
 export default function RootLayout() {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="test"  options={{ title: 'Component Test' }} />
     </Stack>
   )
 }
