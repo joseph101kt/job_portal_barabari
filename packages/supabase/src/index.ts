@@ -1,5 +1,4 @@
 // packages/supabase/src/index.ts
-// Public API — import everything from '@my-app/supabase'
 
 // ── Client ────────────────────────────────────────────────────────────────────
 export { initSupabase, getSupabase, supabase } from './client'
@@ -15,12 +14,26 @@ export {
 } from './queries/profiles'
 
 export {
+  getListings,
   getOpenListings,
-  getListingById,
   getMyListings,
+  getListingById,
   createListing,
   updateListing,
+  addListingSkills,
+  recordJobView,
+  getJobViewCount,
 } from './queries/jobs'
+
+export {
+  applyToJob,
+  getMyApplications,
+  hasApplied,
+  withdrawApplication,
+  getApplicationsForListing,
+  updateApplicationStatus,
+  getApplicationStats,
+} from './queries/applications'
 
 export {
   getMyInterviews,
@@ -49,7 +62,13 @@ export type {
   Education,
   Project,
   Certification,
+  EmploymentType,
+  ExperienceLevel,
+  ListingStatus,
   JobListing,
+  ApplicationStatus,
+  Application,
+  JobView,
   Interview,
   Message,
   JobSeekerFull,

@@ -1,14 +1,13 @@
 // packages/supabase/src/types.ts
-// All database types in one place.
-// Update these as your schema evolves.
 
 export type Role = 'job_seeker' | 'job_poster'
+
+// ── Auth / Profiles ───────────────────────────────────────────────────────────
 
 export type Profile = {
   id:         string
   role:       Role | null
   full_name:  string | null
-  email:      string | null
   avatar_url: string | null
   onboarded:  boolean
   created_at: string
@@ -35,6 +34,8 @@ export type JobPoster = {
   created_at:  string
 }
 
+// ── Skills ────────────────────────────────────────────────────────────────────
+
 export type Skill = {
   id:         string
   name:       string
@@ -51,9 +52,10 @@ export type JobSeekerSkill = {
   years_experience:  number | null
   last_used_at:      string | null
   created_at:        string
-  // joined
   skill?:            Skill
 }
+
+// ── Job seeker profile sections ───────────────────────────────────────────────
 
 export type Experience = {
   id:           string
@@ -61,10 +63,9 @@ export type Experience = {
   company_name: string
   role:         string
   start_date:   string | null
-  end_date:     string | null        // null = current
+  end_date:     string | null
   description:  string | null
   created_at:   string
-  // joined
   skills?:      Skill[]
 }
 
@@ -87,7 +88,6 @@ export type Project = {
   project_url: string | null
   github_url:  string | null
   created_at:  string
-  // joined
   skills?:     Skill[]
 }
 
@@ -102,22 +102,59 @@ export type Certification = {
   created_at:     string
 }
 
+// ── Job listings ──────────────────────────────────────────────────────────────
+
+export type EmploymentType = 'internship' | 'full_time' | 'part_time' | 'contract'
+export type ExperienceLevel = 'fresher' | 'junior' | 'mid' | 'senior'
+export type ListingStatus   = 'open' | 'closed' | 'draft'
+
 export type JobListing = {
-  id:          string
-  poster_id:   string
-  title:       string
-  description: string | null
-  location:    string | null
-  is_remote:   boolean
-  salary_min:  number | null
-  salary_max:  number | null
-  status:      'open' | 'closed' | 'draft'
-  created_at:  string
-  updated_at:  string
+  id:                   string
+  poster_id:            string
+  title:                string
+  description:          string | null
+  location:             string | null
+  is_remote:            boolean
+  salary_min:           number | null
+  salary_max:           number | null
+  employment_type:      EmploymentType | null
+  experience_level:     ExperienceLevel | null
+  application_deadline: string | null
+  status:               ListingStatus
+  created_at:           string
+  updated_at:           string
   // joined
-  poster?:     JobPoster
-  skills?:     (Skill & { required: boolean })[]
+  poster?:              JobPoster
+  skills?:              (Skill & { required: boolean })[]
 }
+
+// ── Applications ──────────────────────────────────────────────────────────────
+
+export type ApplicationStatus = 'applied' | 'shortlisted' | 'rejected' | 'hired'
+
+export type Application = {
+  id:           string
+  job_id:       string
+  user_id:      string
+  status:       ApplicationStatus
+  cover_letter: string | null
+  applied_at:   string
+  updated_at:   string
+  // joined
+  job?:         JobListing
+  applicant?:   Profile & { job_seeker?: JobSeeker }
+}
+
+// ── Job views ─────────────────────────────────────────────────────────────────
+
+export type JobView = {
+  user_id:   string | null
+  job_id:    string
+  clicked:   boolean
+  viewed_at: string
+}
+
+// ── Interviews ────────────────────────────────────────────────────────────────
 
 export type Interview = {
   id:             string
@@ -130,7 +167,7 @@ export type Interview = {
   started_at:     string | null
   ended_at:       string | null
   feedback:       string | null
-  rating:         number | null        // 1–5
+  rating:         number | null
   decision:       'hire' | 'reject' | 'pending' | null
   created_at:     string
   // joined
@@ -139,17 +176,19 @@ export type Interview = {
   listing?:       JobListing
 }
 
+// ── Messages ──────────────────────────────────────────────────────────────────
+
 export type Message = {
   id:         string
   room_id:    string
   sender_id:  string | null
   content:    string
   created_at: string
-  // joined
   sender?:    Profile
 }
 
-// Full job seeker profile with all relations
+// ── Composite ─────────────────────────────────────────────────────────────────
+
 export type JobSeekerFull = JobSeeker & {
   profile:        Profile
   skills:         JobSeekerSkill[]
