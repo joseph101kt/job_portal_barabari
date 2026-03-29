@@ -3,6 +3,7 @@ TODO LIST:
 PHASE 1 — Foundation (do today)
   1.1  Create new Supabase project for job portal
   1.2  Run job_portal_001.sql schema
+  
   1.3  Test auth signup → auto profile creation trigger works
   1.4  Create new Edge Function (resume analyzer only, no medical)
   1.5  Test resume analysis end to end via PowerShell
