@@ -41,4 +41,10 @@ export { FormSection }   from './components/organisms/FormSection'
 
 // ── Theme Provider ──────────────────────────────────────────────────────────────
 export { ThemeProvider } from './components/ThemeProvider'
-export { useFeedback }   from './components/useFeedback'
+
+
+
+// ── Toast ──────────────────────────────────────────────────────────────
+export { ToastProvider } from './components/ToastProvider'
+export { Toast }   from './components/ToastProvider'
+export { useToast } from './components/ToastProvider'

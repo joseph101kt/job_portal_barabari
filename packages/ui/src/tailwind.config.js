@@ -3,8 +3,12 @@ const { hairlineWidth } = require('nativewind/theme')
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class', // ✅ IMPORTANT: enables manual dark mode
+
   content: ['./src/**/*.{ts,tsx}', '../../apps/**/*.{ts,tsx}'],
+
   presets: [require('nativewind/preset')],
+
   theme: {
     extend: {
       colors: {
@@ -69,21 +73,26 @@ module.exports = {
           700: '#B91C1C',
         },
       },
+
       fontFamily: {
         sans: ['System'],
       },
+
       borderWidth: {
         hairline: hairlineWidth(),
       },
+
       spacing: {
         18: '4.5rem',
         22: '5.5rem',
       },
+
       borderRadius: {
         '3xl': '1.5rem',
         '4xl': '2rem',
       },
     },
   },
+
   plugins: [],
 }

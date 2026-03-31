@@ -17,7 +17,7 @@ import { ActivityIndicator, Platform, View, Text } from 'react-native'
 import { initSupabase, getSupabase, type Profile } from '@my-app/supabase'
 import { configureAI } from '@my-app/features'
 import type { Session } from '@supabase/supabase-js'
-import { ThemeProvider } from '@my-app/ui'
+import { ThemeProvider, ToastProvider } from '@my-app/ui'
 
 // ── One-time app init ──────────────────────────────────────────────────────
 initSupabase(
@@ -165,24 +165,29 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* Auth group */}
-      <Stack.Screen name="auth/login"   />
-      <Stack.Screen name="auth/signup"  />
+      <ToastProvider>
 
-      {/* Onboarding group */}
-      <Stack.Screen name="onboarding/role"       />
-      <Stack.Screen name="onboarding/job-seeker" />
-      <Stack.Screen name="onboarding/job-poster" />
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* Auth group */}
+          <Stack.Screen name="auth/login"   />
+          <Stack.Screen name="auth/signup"  />
 
-      {/* Main app groups — tab navigators live inside these */}
-      <Stack.Screen name="seeker" options={{ animation: 'none' }} />
-      <Stack.Screen name="poster" options={{ animation: 'none' }} />
+          {/* Onboarding group */}
+          <Stack.Screen name="onboarding/role"       />
+          <Stack.Screen name="onboarding/job-seeker" />
+          <Stack.Screen name="onboarding/job-poster" />
 
-      {/* Shared screens — stack on top of any tab context */}
-      <Stack.Screen name="shared/chat"             options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="shared/interview-room"   options={{ animation: 'fade', gestureEnabled: false }} />
-    </Stack>
+          {/* Main app groups — tab navigators live inside these */}
+          <Stack.Screen name="seeker" options={{ animation: 'none' }} />
+          <Stack.Screen name="poster" options={{ animation: 'none' }} />
+
+          {/* Shared screens — stack on top of any tab context */}
+          <Stack.Screen name="shared/chat"             options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="shared/interview-room"   options={{ animation: 'fade', gestureEnabled: false }} />
+        </Stack>
+      
+      
+      </ToastProvider>
     </ThemeProvider>
   )
 }

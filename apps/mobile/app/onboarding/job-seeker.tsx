@@ -1,79 +1,145 @@
 // apps/mobile/app/onboarding/job-seeker.tsx
 
+/**
+ * Job Seeker Onboarding Screen
+ * ----------------------------------------
+ * Shown after:
+ * - Role selection (job_seeker)
+ *
+ * Handles:
+ * - Basic candidate profile setup
+ * - Availability selection
+ * - Creating job_seekers record
+ * - Marking onboarding complete
+ *
+ * UX Notes:
+ * - Uses Toast (no Alert)
+ * - Minimal required fields (name, availability)
+ * - Clean selectable UI for availability
+ *
+ * Future Enhancements:
+ * - Resume upload + OCR parsing
+ * - Skills auto-fill
+ * - Experience extraction
+ *
+ * Dependencies:
+ * - expo-router (navigation)
+ * - supabase (auth + db)
+ * - @my-app/ui (Button, Input, Toast)
+ */
+
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { View, Text, Alert, Pressable, ScrollView } from 'react-native'
-import { Button, Input } from '@my-app/ui'
+import { View, Text, Pressable, ScrollView } from 'react-native'
+import { Button, Input, Toast } from '@my-app/ui'
 import { supabase } from '@my-app/supabase'
 
 const AVAILABILITY_OPTIONS = [
-  { label: 'Immediately',   value: 'immediately' },
-  { label: 'In 2 weeks',    value: '2weeks'       },
-  { label: 'In 1 month',    value: '1month'       },
-  { label: 'Not looking',   value: 'not_looking'  },
+  { label: 'Immediately', value: 'immediately' },
+  { label: 'In 2 weeks', value: '2weeks' },
+  { label: 'In 1 month', value: '1month' },
+  { label: 'Not looking', value: 'not_looking' },
 ]
 
 export default function JobSeekerOnboarding() {
   const router = useRouter()
-  const [fullName,     setFullName]     = useState('')
-  const [headline,     setHeadline]     = useState('')
-  const [location,     setLocation]     = useState('')
-  const [availability, setAvailability] = useState<string | null>(null)
-  const [loading,      setLoading]      = useState(false)
 
+  // ─────────────────────────────────────────────
+  // STATE
+  // ─────────────────────────────────────────────
+  const [fullName, setFullName] = useState('')
+  const [headline, setHeadline] = useState('')
+  const [location, setLocation] = useState('')
+  const [availability, setAvailability] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  // ─────────────────────────────────────────────
+  // SAVE HANDLER
+  // ─────────────────────────────────────────────
   async function handleSave() {
+    // ✅ Validation
     if (!fullName.trim()) {
-      Alert.alert('Error', 'Please enter your name')
+      Toast.showError('Please enter your name')
       return
     }
+
     if (!availability) {
-      Alert.alert('Error', 'Please select your availability')
+      Toast.showError('Please select your availability')
       return
     }
 
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.replace('/auth/login'); return }
 
-    // Update profile name
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName.trim(), onboarded: true })
-      .eq('id', user.id)
+    // 👤 Get user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    if (profileError) {
-      Alert.alert('Error', profileError.message)
+    if (!user) {
+      Toast.showError('Session expired. Please login again.')
+      router.replace('/auth/login')
       setLoading(false)
       return
     }
 
-    // Create job_seekers row
+    // 🧾 Update profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        full_name: fullName.trim(),
+        onboarded: true,
+      })
+      .eq('id', user.id)
+
+    if (profileError) {
+      Toast.showError(profileError.message, 'Profile update failed')
+      setLoading(false)
+      return
+    }
+
+    // 👤 Create / update job seeker record
     const { error: seekerError } = await supabase
       .from('job_seekers')
       .upsert({
-        id:           user.id,
-        headline:     headline.trim() || null,
-        location:     location.trim() || null,
+        id: user.id,
+        headline: headline.trim() || null,
+        location: location.trim() || null,
         availability,
       })
 
     if (seekerError) {
-      Alert.alert('Error', seekerError.message)
+      Toast.showError(seekerError.message, 'Profile setup failed')
       setLoading(false)
       return
     }
 
+    // ✅ Success
+    Toast.showSuccess('Profile setup complete!')
+
+    // 🚀 Navigate to dashboard
     router.replace('/dashboard/seeker')
+
     setLoading(false)
   }
 
+  // ─────────────────────────────────────────────
+  // UI
+  // ─────────────────────────────────────────────
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerClassName="px-6 py-12">
-      <Text className="text-3xl font-bold text-gray-900 mb-2">Set up your profile</Text>
+    <ScrollView
+      className="flex-1 bg-white"
+      contentContainerClassName="px-6 py-12"
+    >
+      {/* Header */}
+      <Text className="text-3xl font-bold text-gray-900 mb-2">
+        Set up your profile
+      </Text>
+
       <Text className="text-base text-gray-500 mb-8">
         This helps employers understand who you are at a glance.
       </Text>
 
+      {/* Basic Info */}
       <View className="gap-4 mb-6">
         <Input
           label="Full name *"
@@ -81,6 +147,7 @@ export default function JobSeekerOnboarding() {
           value={fullName}
           onChangeText={setFullName}
         />
+
         <Input
           label="Headline"
           placeholder="Senior React Developer · Open to remote"
@@ -88,6 +155,7 @@ export default function JobSeekerOnboarding() {
           onChangeText={setHeadline}
           hint="A short tagline that appears on your profile"
         />
+
         <Input
           label="Location"
           placeholder="San Francisco, CA"
@@ -96,7 +164,11 @@ export default function JobSeekerOnboarding() {
         />
       </View>
 
-      <Text className="text-sm font-medium text-gray-700 mb-3">Availability *</Text>
+      {/* Availability */}
+      <Text className="text-sm font-medium text-gray-700 mb-3">
+        Availability *
+      </Text>
+
       <View className="gap-2 mb-8">
         {AVAILABILITY_OPTIONS.map(opt => (
           <Pressable
@@ -108,22 +180,34 @@ export default function JobSeekerOnboarding() {
                 : 'border-gray-200 bg-white'
             }`}
           >
-            <View className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
-              availability === opt.value ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
-            }`}>
+            {/* Radio */}
+            <View
+              className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
+                availability === opt.value
+                  ? 'border-blue-600 bg-blue-600'
+                  : 'border-gray-300'
+              }`}
+            >
               {availability === opt.value && (
                 <View className="w-2 h-2 rounded-full bg-white" />
               )}
             </View>
-            <Text className={`text-sm font-medium ${
-              availability === opt.value ? 'text-blue-700' : 'text-gray-700'
-            }`}>
+
+            {/* Label */}
+            <Text
+              className={`text-sm font-medium ${
+                availability === opt.value
+                  ? 'text-blue-700'
+                  : 'text-gray-700'
+              }`}
+            >
               {opt.label}
             </Text>
           </Pressable>
         ))}
       </View>
 
+      {/* Submit */}
       <Button
         label="Complete setup"
         variant="primary"
@@ -132,6 +216,7 @@ export default function JobSeekerOnboarding() {
         fullWidth
       />
 
+      {/* Footer */}
       <Text className="text-xs text-gray-400 text-center mt-4">
         You can edit all of this later from your profile settings.
       </Text>

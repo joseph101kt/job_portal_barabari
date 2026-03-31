@@ -1,22 +1,54 @@
 // apps/mobile/app/auth/login.tsx
 
+/**
+ * Login Screen
+ * ----------------------------------------
+ * Handles:
+ * - Email/password authentication
+ * - Google OAuth login
+ * - Validation + error handling using Toast
+ *
+ * UX Notes:
+ * - Uses Toast for all feedback (errors + success)
+ * - Prevents empty submissions
+ * - Shows loading state on button
+ *
+ * Dependencies:
+ * - expo-router (navigation)
+ * - supabase (auth)
+ * - @my-app/ui (Button, Input, Toast)
+ */
+
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { View, Text, Pressable } from 'react-native'
-import { Button, Input, useFeedback } from '@my-app/ui'
+import { Button, Input, Toast } from '@my-app/ui'
 import { supabase } from '@my-app/supabase'
 
 export default function LoginScreen() {
   const router = useRouter()
-  const { showError, showSuccess, logEvent } = useFeedback()
 
+  // ─────────────────────────────────────────────
+  // STATE
+  // ─────────────────────────────────────────────
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // ─────────────────────────────────────────────
+  // LOGGING (dev/debug)
+  // ─────────────────────────────────────────────
+  function logEvent(scope: string, message: string) {
+    console.log(`[${scope}] ${message}`)
+  }
+
+  // ─────────────────────────────────────────────
+  // EMAIL/PASSWORD LOGIN
+  // ─────────────────────────────────────────────
   async function handleLogin() {
+    // ✅ Validation
     if (!email || !password) {
-      showError('Missing details', 'Please enter your email and password')
+      Toast.showError('Please enter your email and password!', 'Missing details')
       return
     }
 
@@ -28,24 +60,24 @@ export default function LoginScreen() {
       password,
     })
 
+    // ❌ Error handling
     if (error) {
       logEvent('Auth', `Login error: ${error.message}`)
 
-      // 🔥 Friendly error messages
       if (error.message.includes('Invalid login credentials')) {
-        showError(
-          'Login failed',
-          'Incorrect email or password. Please try again.'
+        Toast.showError(
+          'Incorrect email or password. Please try again',
+          'Login failed'
         )
       } else if (error.message.includes('Email not confirmed')) {
-        showError(
-          'Email not verified',
-          'Please verify your email before logging in.'
+        Toast.showError(
+          'Please verify your email before logging in.',
+          'Email not verified'
         )
       } else {
-        showError(
-          'Login failed',
-          'Something went wrong. Please try again.'
+        Toast.showError(
+          'Something went wrong. Please try again.',
+          'Login Failed'
         )
       }
 
@@ -53,23 +85,30 @@ export default function LoginScreen() {
       return
     }
 
-    // ✅ Safety check (handles deleted users / broken sessions)
+    // ❌ Edge case: no user
     if (!data.user) {
       await supabase.auth.signOut()
-      showError('Session error', 'User not found. Please sign up again.')
+      Toast.showError(
+        'User not found. Please sign up again.',
+        'Session error'
+      )
       setLoading(false)
       return
     }
 
+    // ✅ Success
     logEvent('Auth', `Login success: ${data.user.email}`)
-    showSuccess('Welcome back!', 'Login successful')
-
-    // Redirect handled by _layout, but you can force:
-    // router.replace('/')
+    Toast.showSuccess('Login successful', 'Welcome back!')
 
     setLoading(false)
+
+    // 👉 (optional next step)
+    // router.replace('/home')
   }
 
+  // ─────────────────────────────────────────────
+  // GOOGLE LOGIN
+  // ─────────────────────────────────────────────
   async function handleGoogleLogin() {
     logEvent('Auth', 'Google login started')
 
@@ -80,12 +119,16 @@ export default function LoginScreen() {
 
     if (error) {
       logEvent('Auth', `Google login error: ${error.message}`)
-      showError('Google login failed', 'Please try again.')
+      Toast.showError('Please try again.', 'Google login failed')
     }
   }
 
+  // ─────────────────────────────────────────────
+  // UI
+  // ─────────────────────────────────────────────
   return (
     <View className="flex-1 justify-center px-6 bg-white">
+      {/* Header */}
       <Text className="text-3xl font-bold text-gray-900 mb-2">
         Welcome back
       </Text>
@@ -94,6 +137,7 @@ export default function LoginScreen() {
       </Text>
 
       <View className="gap-4">
+        {/* Email */}
         <Input
           label="Email"
           placeholder="you@example.com"
@@ -103,6 +147,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
         />
 
+        {/* Password */}
         <Input
           label="Password"
           placeholder="••••••••"
@@ -111,6 +156,7 @@ export default function LoginScreen() {
           secureTextEntry
         />
 
+        {/* Login Button */}
         <Button
           label="Sign in"
           variant="primary"
@@ -119,12 +165,14 @@ export default function LoginScreen() {
           fullWidth
         />
 
+        {/* Divider */}
         <View className="flex-row items-center gap-3 my-2">
           <View className="flex-1 h-px bg-gray-200" />
           <Text className="text-sm text-gray-400">or</Text>
           <View className="flex-1 h-px bg-gray-200" />
         </View>
 
+        {/* Google Login */}
         <Button
           label="Continue with Google"
           variant="outline"
@@ -132,6 +180,7 @@ export default function LoginScreen() {
           fullWidth
         />
 
+        {/* Signup Redirect */}
         <Pressable
           onPress={() => router.push('/auth/signup')}
           className="items-center mt-2"
