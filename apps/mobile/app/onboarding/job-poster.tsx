@@ -57,7 +57,7 @@ export default function JobPosterOnboarding() {
       return
     }
 
-    router.replace('/dashboard/poster')
+    router.replace('poster/dashboard')
     setLoading(false)
   }
 

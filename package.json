@@ -12,6 +12,7 @@
   "dependencies": {
     "mammoth": "^1.12.0",
     "pdfjs-dist": "^5.5.207",
+    "react-native-toast-message": "^2.3.3",
     "supabase": "^2.83.0",
     "tesseract.js": "^7.0.0"
   },

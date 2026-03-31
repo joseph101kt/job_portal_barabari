@@ -11,14 +11,17 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 let _client: SupabaseClient | null = null
 
 export function initSupabase(url: string, anonKey: string): SupabaseClient {
+  if (_client) return _client   // ✅ prevent re-init
+
   if (!url || !anonKey) {
     throw new Error('@my-app/supabase: url and anonKey are required')
   }
 
   _client = createClient(url, anonKey, {
     auth: {
-      persistSession:   true,
+      persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: false,
     },
   })
 

@@ -36,3 +36,9 @@ export { ProfileHeader } from './components/organisms/ProfileHeader'
 export { TabBar }        from './components/organisms/TabBar'
 export { ChatInput }     from './components/organisms/ChatInput'
 export { FormSection }   from './components/organisms/FormSection'
+
+
+
+// ── Theme Provider ──────────────────────────────────────────────────────────────
+export { ThemeProvider } from './components/ThemeProvider'
+export { useFeedback }   from './components/useFeedback'

@@ -39,20 +39,21 @@ export default function SeekerProfileScreen() {
     setLoading(false)
   }
 
-  async function handleSignOut() {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          await getSupabase().auth.signOut()
-          router.replace('/auth/login')
-        },
-      },
-    ])
+async function handleSignOut() {
+
+  console.log("sign out clicked")
+
+  const supabase = getSupabase()
+
+  const { error } = await supabase.auth.signOut()
+
+  if (error) {
+    console.log('[Auth] Sign out error:', error.message)
+  } else {
+    console.log('[Auth] Signed out successfully')
   }
 
+}
   const completionTasks = [
     { label: 'Add your headline',    done: !!seeker?.headline,     onPress: () => router.push('/seeker/edit/basics') },
     { label: 'Add your location',    done: !!seeker?.location,     onPress: () => router.push('/seeker/edit/basics') },

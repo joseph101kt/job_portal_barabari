@@ -12,63 +12,63 @@ export default function SignupScreen() {
   const router = useRouter()
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
-  const [role,     setRole]     = useState<Role>('job_seeker')
   const [loading,  setLoading]  = useState(false)
 
-  async function handleSignup() {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields')
-      return
-    }
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters')
-      return
-    }
+async function handleSignup() {
+  if (!email || !password) {
+    Alert.alert('Error', 'Please fill in all fields')
+    return
+  }
 
-    setLoading(true)
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { role },   // passed to handle_new_user trigger
-      },
+  if (password.length < 6) {
+    Alert.alert('Error', 'Password must be at least 6 characters')
+    return
+  }
+
+  setLoading(true)
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  })
+
+  if (error) {
+    Alert.alert('Signup failed', error.message)
+    setLoading(false)
+    return
+  }
+
+  const user = data.user
+
+  if (!user) {
+    Alert.alert('Error', 'User not returned after signup')
+    setLoading(false)
+    return
+  }
+
+  // ✅ Insert profile immediately
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .insert({
+      id: user.id,
     })
 
-    if (error) {
-      Alert.alert('Signup failed', error.message)
-    } else {
-      Alert.alert(
-        'Check your email',
-        'We sent you a confirmation link. Click it to activate your account.',
-        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
-      )
-    }
+  if (profileError) {
+    Alert.alert('Profile error', profileError.message)
     setLoading(false)
+    return
   }
+
+  // ✅ Success → go to main app (NOT login)
+  router.replace('/')
+
+  setLoading(false)
+}
 
   return (
     <View className="flex-1 justify-center px-6 bg-white">
       <Text className="text-3xl font-bold text-gray-900 mb-2">Create account</Text>
       <Text className="text-base text-gray-500 mb-8">Get started on your journey</Text>
-
-      {/* Role picker */}
-      <Text className="text-sm font-medium text-gray-700 mb-3">I am a...</Text>
-      <View className="flex-row gap-3 mb-6">
-        <RoleCard
-          label="Job Seeker"
-          description="Looking for opportunities"
-          icon="🔍"
-          selected={role === 'job_seeker'}
-          onPress={() => setRole('job_seeker')}
-        />
-        <RoleCard
-          label="Job Poster"
-          description="Hiring talent"
-          icon="🏢"
-          selected={role === 'job_poster'}
-          onPress={() => setRole('job_poster')}
-        />
-      </View>
 
       <View className="gap-4">
         <Input
