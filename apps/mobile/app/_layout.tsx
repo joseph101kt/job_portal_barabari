@@ -56,6 +56,30 @@ export default function RootLayout() {
   useEffect(() => {
     const supabase = getSupabase()
 
+async function handleSession(session: Session | null) {
+  if (!session) {
+    console.log('[Auth] no session')
+    setAuthState('unauthenticated')
+    return
+  }
+
+  const { data: profile, error } = await getSupabase()
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single()
+
+  if (error) {
+    console.error('[DB] profile error:', error.message)
+  }
+
+  const state = deriveState(session, profile as Profile | null)
+
+  console.log('[Auth] derived state:', state)
+
+  setAuthState(state)
+}
+
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('[Auth] initial session:', session ? `uid=${session.user.id}` : 'none')
@@ -71,28 +95,7 @@ export default function RootLayout() {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function handleSession(session: Session | null) {
-    if (!session) {
-      console.log('[Auth] no session → login')
-      setAuthState('unauthenticated')
-      return
-    }
 
-    // Fetch profile to determine routing
-    const { data: profile, error } = await getSupabase()
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single()
-
-    if (error) {
-      console.log('[DB] error fetching profile:', error.message)
-    }
-
-    const state = deriveState(session, profile as Profile | null)
-    console.log('[Auth] derived state:', state, '| role:', profile?.role ?? 'none', '| onboarded:', profile?.onboarded)
-    setAuthState(state)
-  }
 
   // Route based on auth state
   useEffect(() => {
@@ -155,9 +158,9 @@ export default function RootLayout() {
 
   if (authState === 'loading') {
     return (
-      <View className="flex-1 items-center justify-center bg-neutral-50">
+      <View className="flex-1 items-center justify-center bg-neutral-50 dark:bg-neutral-900">
         <ActivityIndicator size="large" color="#4F6EF7" />
-        <Text className="text-xs text-neutral-400 mt-3">Loading…</Text>
+        <Text className="text-xs text-neutral-400 dark:text-neutral-500 mt-3">Loading...</Text>
       </View>
     )
   }

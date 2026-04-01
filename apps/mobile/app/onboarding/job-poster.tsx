@@ -1,33 +1,10 @@
 // apps/mobile/app/onboarding/job-poster.tsx
 
-/**
- * Job Poster Onboarding Screen
- * ----------------------------------------
- * Shown after:
- * - Role selection (job_poster)
- *
- * Handles:
- * - Collecting company + recruiter info
- * - Updating profile + job_posters table
- * - Marking onboarding as complete
- *
- * UX Notes:
- * - Uses Toast (no Alert)
- * - Minimal required fields (name, company)
- * - Optional enrichment fields
- * - Clean, scrollable form
- *
- * Dependencies:
- * - expo-router (navigation)
- * - supabase (auth + db)
- * - @my-app/ui (Button, Input, Toast)
- */
-
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { View, Text, ScrollView } from 'react-native'
 import { Button, Input, Toast } from '@my-app/ui'
-import { supabase } from '@my-app/supabase'
+import { supabase, upsertJobPoster, updateProfile } from '@my-app/supabase'
 
 export default function JobPosterOnboarding() {
   const router = useRouter()
@@ -37,16 +14,21 @@ export default function JobPosterOnboarding() {
   // ─────────────────────────────────────────────
   const [fullName, setFullName] = useState('')
   const [company, setCompany] = useState('')
-  const [position, setPosition] = useState('')
   const [industry, setIndustry] = useState('')
   const [website, setWebsite] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
 
+  function stopLoading() {
+    setLoading(false)
+  }
+
   // ─────────────────────────────────────────────
   // SAVE HANDLER
   // ─────────────────────────────────────────────
   async function handleSave() {
+    if (loading) return
+
     // ✅ Validation
     if (!fullName.trim()) {
       Toast.showError('Please enter your name')
@@ -65,54 +47,70 @@ export default function JobPosterOnboarding() {
       data: { user },
     } = await supabase.auth.getUser()
 
+    console.log('🚀 User:', user)
+
     if (!user) {
       Toast.showError('Session expired. Please login again.')
       router.replace('/auth/login')
-      setLoading(false)
+      stopLoading()
       return
     }
 
-    // 🧾 Update profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        full_name: fullName.trim(),
-        onboarded: true,
-      })
-      .eq('id', user.id)
+    // 🧾 Step 1: Update profile (via query layer)
+    const profile = await updateProfile(user.id, {
+      full_name: fullName.trim(),
+    })
 
-    if (profileError) {
-      Toast.showError(profileError.message, 'Profile update failed')
-      setLoading(false)
+    if (!profile) {
+      console.error('❌ Profile update failed')
+      Toast.showError('Profile update failed')
+      stopLoading()
       return
     }
 
-    // 🏢 Upsert job poster data
-    const { error: posterError } = await supabase
-      .from('job_posters')
-      .upsert({
-        id: user.id,
-        company: company.trim(),
-        industry: industry.trim() || null,
-        website: website.trim() || null,
-        description: description.trim() || null,
-        // 🔥 future-ready
-        position: position.trim() || null,
-      })
+    console.log('✅ Profile updated')
 
-    if (posterError) {
-      Toast.showError(posterError.message, 'Company setup failed')
-      setLoading(false)
+    // 🏢 Step 2: Upsert job poster
+    const payload = {
+      company: company.trim(),
+      industry: industry.trim() || null,
+      website: website.trim() || null,
+      description: description.trim() || null,
+    }
+
+    console.log('📦 Payload:', payload)
+
+    const poster = await upsertJobPoster(user.id, payload)
+
+    if (!poster) {
+      console.error('❌ Job poster upsert failed:', payload)
+      Toast.showError('Setup failed. Please try again.')
+      stopLoading()
       return
     }
+
+    console.log('✅ Job poster upserted:', poster)
+
+    // ✅ Step 3: Mark onboarding complete
+    const onboardProfile = await updateProfile(user.id, {
+      onboarded: true,
+    })
+
+    if (!onboardProfile) {
+      console.error('❌ Onboarding update failed')
+      Toast.showError('Failed to complete onboarding')
+      stopLoading()
+      return
+    }
+
+    console.log('✅ Onboarding completed')
 
     // ✅ Success
     Toast.showSuccess('Setup complete!')
-
-    // 🚀 Navigate to dashboard
-    router.replace('/poster/dashboard')
-
-    setLoading(false)
+setTimeout(() => {
+  supabase.auth.refreshSession()
+}, 100)
+    stopLoading()
   }
 
   // ─────────────────────────────────────────────
@@ -120,15 +118,15 @@ export default function JobPosterOnboarding() {
   // ─────────────────────────────────────────────
   return (
     <ScrollView
-      className="flex-1 bg-white"
+      className="flex-1 bg-white dark:bg-neutral-900"
       contentContainerClassName="px-6 py-12"
     >
       {/* Header */}
-      <Text className="text-3xl font-bold text-gray-900 mb-2">
+      <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
         Set up your company
       </Text>
 
-      <Text className="text-base text-gray-500 mb-8">
+      <Text className="text-base text-gray-500 dark:text-gray-400 mb-8">
         Candidates will see this when you reach out.
       </Text>
 
@@ -146,13 +144,6 @@ export default function JobPosterOnboarding() {
           placeholder="Acme Inc."
           value={company}
           onChangeText={setCompany}
-        />
-
-        <Input
-          label="Your position"
-          placeholder="Head of Engineering"
-          value={position}
-          onChangeText={setPosition}
         />
 
         <Input
@@ -190,7 +181,7 @@ export default function JobPosterOnboarding() {
       />
 
       {/* Footer */}
-      <Text className="text-xs text-gray-400 text-center mt-4">
+      <Text className="text-xs text-gray-400 dark:text-gray-500 text-center mt-4">
         You can edit all of this later from your settings.
       </Text>
     </ScrollView>
