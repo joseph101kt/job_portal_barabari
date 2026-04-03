@@ -117,7 +117,7 @@ export default function JobSeekerOnboarding() {
     Toast.showSuccess('Profile setup complete!')
 
     // 🚀 Navigate to dashboard
-    router.replace('/dashboard/seeker')
+    router.replace('/seeker/jobs')
 
     setLoading(false)
   }
