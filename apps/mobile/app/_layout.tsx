@@ -67,10 +67,15 @@ async function handleSession(session: Session | null) {
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('[DB] profile error:', error.message)
+  }
+  if (!profile) {
+    console.log('[Auth] profile not ready yet')
+    setAuthState('onboarding_role')
+    return
   }
 
   const state = deriveState(session, profile as Profile | null)

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
 import {
   PageLayout, Input, Button, Toggle,
-  StepIndicator, FormSection, Chip, Divider,
+  StepIndicator, FormSection, Chip,
   Toast,
 } from '@my-app/ui'
 import {
@@ -13,21 +13,125 @@ import {
   type ListingStatus,
 } from '@my-app/supabase'
 
-const STEPS = ['Role details', 'Description', 'Requirements', 'Compensation']
+// ✅ ONLY 2 STEPS
+const STEPS = ['Job details', 'Compensation']
 
 const EMPLOYMENT_TYPES: { label: string; value: EmploymentType }[] = [
-  { label: 'Full-time',  value: 'full_time' },
+  { label: 'Full-time', value: 'full_time' },
   { label: 'Internship', value: 'internship' },
-  { label: 'Part-time',  value: 'part_time' },
-  { label: 'Contract',   value: 'contract' },
+  { label: 'Part-time', value: 'part_time' },
+  { label: 'Contract', value: 'contract' },
 ]
 
 const EXPERIENCE_LEVELS: { label: string; value: ExperienceLevel }[] = [
-  { label: 'Fresher',   value: 'fresher' },
-  { label: 'Junior',    value: 'junior' },
+  { label: 'Fresher', value: 'fresher' },
+  { label: 'Junior', value: 'junior' },
   { label: 'Mid-level', value: 'mid' },
-  { label: 'Senior',    value: 'senior' },
+  { label: 'Senior', value: 'senior' },
 ]
+
+// ───────────────── STEP 1 ─────────────────
+function StepJobDetails({
+  title, setTitle,
+  empType, setEmpType,
+  description, setDescription,
+}: any) {
+  return (
+    <FormSection title="Job Details">
+      <Input
+        label="Job title *"
+        placeholder="e.g. Frontend Engineer"
+        value={title}
+        onChangeText={setTitle}
+      />
+
+      <View className="gap-2">
+        <Text className="text-sm font-medium">Employment type *</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {EMPLOYMENT_TYPES.map(t => (
+            <Chip
+              key={t.value}
+              label={t.label}
+              selected={empType === t.value}
+              onPress={() => setEmpType(t.value)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <Input
+        label="Job description *"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+        numberOfLines={8}
+      />
+    </FormSection>
+  )
+}
+
+// ───────────────── STEP 2 ─────────────────
+function StepCompensation({
+  expLevel, setExpLevel,
+  location, setLocation,
+  isRemote, setIsRemote,
+  salaryMin, setSalaryMin,
+  salaryMax, setSalaryMax,
+  deadline, setDeadline,
+}: any) {
+  return (
+    <FormSection title="Compensation & Requirements">
+      <View className="gap-2">
+        <Text className="text-sm font-medium">Experience level</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {EXPERIENCE_LEVELS.map(l => (
+            <Chip
+              key={l.value}
+              label={l.label}
+              selected={expLevel === l.value}
+              onPress={() => setExpLevel(l.value)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <Input
+        label="Location"
+        value={location}
+        onChangeText={setLocation}
+      />
+
+      <Toggle
+        label="Remote"
+        value={isRemote}
+        onToggle={setIsRemote}
+      />
+
+      <Input
+        label="Min salary"
+        value={salaryMin}
+        onChangeText={setSalaryMin}
+        keyboardType="numeric"
+      />
+
+      <Input
+        label="Max salary"
+        value={salaryMax}
+        onChangeText={setSalaryMax}
+        keyboardType="numeric"
+      />
+
+      <Input
+        label="Application deadline"
+        value={deadline}
+        onChangeText={setDeadline}
+        placeholder="YYYY-MM-DD"
+      />
+    </FormSection>
+  )
+}
+
+// ───────────────── MAIN SCREEN ─────────────────
 
 export default function CreateJobScreen() {
   const router = useRouter()
@@ -46,8 +150,9 @@ export default function CreateJobScreen() {
   const [deadline, setDeadline] = useState('')
 
   function canAdvance(): boolean {
-    if (step === 0) return !!title.trim() && !!empType
-    if (step === 1) return !!description.trim()
+    if (step === 0) {
+      return !!title.trim() && !!empType && !!description.trim()
+    }
     return true
   }
 
@@ -75,7 +180,6 @@ export default function CreateJobScreen() {
       return
     }
 
-    // ✅ VALIDATION
     const error = validateJob({
       title,
       description,
@@ -94,17 +198,30 @@ export default function CreateJobScreen() {
     try {
       const status: ListingStatus = 'open'
 
+      function toNullableNumber(val: string): number | null {
+        if (!val) return null
+        const num = Number(val)
+        return isNaN(num) ? null : num
+      }
+
       const payload = {
         poster_id: poster.id,
         title: title.trim(),
-        description: description.trim(),
-        employment_type: empType ?? undefined,
-        experience_level: expLevel ?? undefined,
-        location: location.trim() || undefined,
+        description: description.trim() || null,
+
+        employment_type: empType ?? null,
+        experience_level: expLevel ?? null,
+
+        location: location.trim() || null,
         is_remote: isRemote,
-        salary_min: salaryMin ? parseInt(salaryMin) : undefined,
-        salary_max: salaryMax ? parseInt(salaryMax) : undefined,
-        application_deadline: deadline || undefined,
+
+        salary_min: toNullableNumber(salaryMin),
+        salary_max: toNullableNumber(salaryMax),
+
+        application_deadline: deadline
+          ? new Date(deadline).toISOString()
+          : null,
+
         status,
       }
 
@@ -121,7 +238,6 @@ export default function CreateJobScreen() {
       }
 
       Toast.showSuccess('Job posted successfully')
-
       router.replace('/poster/dashboard')
 
     } catch (err) {
@@ -154,40 +270,31 @@ export default function CreateJobScreen() {
         <StepIndicator steps={STEPS} current={step} />
 
         {step === 0 && (
-          <FormSection title="What role are you hiring for?">
-            <Input
-              label="Job title *"
-              placeholder="e.g. Frontend Engineer"
-              value={title}
-              onChangeText={setTitle}
-            />
-
-            <View className="gap-2">
-              <Text className="text-sm font-medium">Employment type *</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {EMPLOYMENT_TYPES.map(t => (
-                  <Chip
-                    key={t.value}
-                    label={t.label}
-                    selected={empType === t.value}
-                    onPress={() => setEmpType(t.value)}
-                  />
-                ))}
-              </View>
-            </View>
-          </FormSection>
+          <StepJobDetails
+            title={title}
+            setTitle={setTitle}
+            empType={empType}
+            setEmpType={setEmpType}
+            description={description}
+            setDescription={setDescription}
+          />
         )}
 
         {step === 1 && (
-          <FormSection title="Describe the role">
-            <Input
-              label="Job description *"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={10}
-            />
-          </FormSection>
+          <StepCompensation
+            expLevel={expLevel}
+            setExpLevel={setExpLevel}
+            location={location}
+            setLocation={setLocation}
+            isRemote={isRemote}
+            setIsRemote={setIsRemote}
+            salaryMin={salaryMin}
+            setSalaryMin={setSalaryMin}
+            salaryMax={salaryMax}
+            setSalaryMax={setSalaryMax}
+            deadline={deadline}
+            setDeadline={setDeadline}
+          />
         )}
 
         <View className="flex-row gap-3 pt-2">
@@ -212,7 +319,7 @@ export default function CreateJobScreen() {
   )
 }
 
-/* ───────────────── VALIDATION ───────────────── */
+// ───────────────── VALIDATION ─────────────────
 
 type ValidateJobInput = {
   title: string

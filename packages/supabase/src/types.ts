@@ -128,6 +128,22 @@ export type JobListing = {
   skills?:              (Skill & { required: boolean })[]
 }
 
+export type CreateJobListingInput = {
+  poster_id: string
+  title: string
+  description?: string | null
+  location?: string | null
+  is_remote?: boolean
+  salary_min?: number | null
+  salary_max?: number | null
+  employment_type?: EmploymentType | null
+  experience_level?: ExperienceLevel | null
+  application_deadline?: string | null
+  status?: ListingStatus
+}
+
+
+
 // ── Applications ──────────────────────────────────────────────────────────────
 
 export type ApplicationStatus = 'applied' | 'shortlisted' | 'rejected' | 'hired'
