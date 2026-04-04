@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { View, ActivityIndicator, Text, Alert } from 'react-native'
-import { Button, colors } from '@my-app/ui'
+import { Button, colors, Toast } from '@my-app/ui'
 import {
   useDocumentExtractor,
   useDocument,
@@ -77,12 +77,18 @@ export function ResumeUploadButton({
       handleAnalyze(doc.result.text)
     }
 
-    if (doc.status === 'error') {
-      console.error('[Resume] extraction failed:', doc.error)
-      Alert.alert('Extraction failed', doc.error ?? 'Could not read file. Try a different PDF or DOCX.')
-      resetAll()
-      onError?.(new Error(doc.error ?? 'extraction failed'))
-    }
+if (doc.status === 'error') {
+  if (doc.error === 'cancelled') {
+    console.log('[Resume] user cancelled picker')
+    resetAll()
+    return
+  }
+
+  console.error('[Resume] extraction failed:', doc.error)
+  Alert.alert('Extraction failed', doc.error ?? 'Could not read file.')
+  resetAll()
+  onError?.(new Error(doc.error ?? 'extraction failed'))
+}
   }, [doc.status])
 
   // ─────────────────────────────────────────────
@@ -165,6 +171,8 @@ export function ResumeUploadButton({
     hasSavedRef.current    = false
     doc.reset()
     ai.reset()
+    setStatusMessage('')
+    setIsProcessing(false)
   }
 
   // ─────────────────────────────────────────────
@@ -189,7 +197,9 @@ export function ResumeUploadButton({
       await pickAndExtract()
     } catch (err: any) {
       console.error('[Resume] pickAndExtract threw:', err?.message ?? err)
-      Alert.alert('Upload failed', 'Could not open file picker.')
+      Toast.showError(
+        doc.error ?? 'Could not read file. Try a different PDF or DOCX.'
+      )
       resetAll()
       onError?.(err)
     }
