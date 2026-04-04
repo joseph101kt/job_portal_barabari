@@ -72,4 +72,6 @@ export type {
   Interview,
   Message,
   JobSeekerFull,
+  normalizeCreateJobListing,
+  validateCreateJobListing,
 } from './types'

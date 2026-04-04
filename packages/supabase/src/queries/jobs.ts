@@ -1,7 +1,7 @@
 // packages/supabase/src/queries/jobs.ts
 
 import { getSupabase } from '../client'
-import type { JobListing, EmploymentType, ExperienceLevel, ListingStatus } from '../types'
+import { type JobListing, type EmploymentType, type ExperienceLevel, type ListingStatus, CreateJobListingInput, normalizeCreateJobListing, validateCreateJobListing } from '../types'
 
 /* ────────────────────────────────────────────────
    🧠 HELPERS
@@ -120,42 +120,41 @@ export async function getListingById(id: string): Promise<JobListing | null> {
    ➕ CREATE
 ──────────────────────────────────────────────── */
 
-export async function createListing(
-  listing: Pick<JobListing, 'poster_id' | 'title'> &
-    Partial<Omit<JobListing, 'id' | 'created_at' | 'updated_at' | 'poster' | 'skills'>>
-): Promise<JobListing | null> {
 
-  console.log('📦 createListing input:', listing)
+export async function createListing(
+  input: CreateJobListingInput
+): Promise<JobListing | null> {
+  console.log('🚀 createListing called')
 
   // ✅ VALIDATION
-  assert(listing.poster_id, 'poster_id is required')
-  assert(listing.title?.trim(), 'title is required')
-
-  if (
-    listing.salary_min &&
-    listing.salary_max &&
-    listing.salary_min > listing.salary_max
-  ) {
-    throw new Error('Invalid salary range')
+  const error = validateCreateJobListing(input)
+  if (error) {
+    console.error('❌ Validation error:', error)
+    throw new Error(error)
   }
+
+  // ✅ NORMALIZE (VERY IMPORTANT)
+  const payload = normalizeCreateJobListing(input)
+
+  console.log('📦 Payload:', payload)
 
   try {
     const { data, error } = await getSupabase()
       .from('job_listings')
-      .insert(listing)
+      .insert(payload)
       .select()
       .single()
 
     if (error) {
-      console.error('❌ createListing error:', error)
-      throw error
+      console.error('❌ Supabase insert error:', error)
+      return null
     }
 
-    console.log('✅ Listing created:', data)
+    console.log('✅ Created listing:', data)
 
-    return data
+    return data as JobListing
   } catch (err) {
-    console.error('❌ createListing failed:', err)
+    console.error('❌ Unexpected error:', err)
     return null
   }
 }

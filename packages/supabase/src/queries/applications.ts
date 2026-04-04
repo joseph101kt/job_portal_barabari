@@ -5,51 +5,108 @@ import type { Application, ApplicationStatus } from '../types'
 
 // Job seeker: apply to a listing
 export async function applyToJob(params: {
-  job_id:       string
-  user_id:      string
+  job_id: string
+  user_id: string
   cover_letter?: string
 }): Promise<Application | null> {
-  const { data } = await getSupabase()
+  console.log('🚀 Applying to job')
+
+  if (!params.job_id || !params.user_id) {
+    console.error('❌ Missing job_id or user_id')
+    return null
+  }
+
+  const payload = {
+    job_id: params.job_id,
+    user_id: params.user_id,
+    cover_letter: params.cover_letter?.trim() || null,
+  }
+
+  console.log('📦 Payload:', payload)
+
+  const { data, error } = await getSupabase()
     .from('applications')
-    .insert(params)
+    .insert(payload)
     .select()
     .single()
+
+  if (error) {
+    console.error('❌ Apply error:', error)
+    return null
+  }
+
+  console.log('✅ Applied:', data)
+
   return data
 }
 
 // Job seeker: view their own applications
 export async function getMyApplications(userId: string): Promise<Application[]> {
-  const { data } = await getSupabase()
+  console.log('🚀 Fetching my applications:', userId)
+
+  const { data, error } = await getSupabase()
     .from('applications')
     .select(`
       *,
       job:job_listings (
-        id, title, status, employment_type, experience_level,
-        poster:job_posters ( company )
+        id,
+        title,
+        location,
+        is_remote,
+        salary_min,
+        salary_max,
+        employment_type,
+        experience_level,
+        status,
+        poster:job_posters (
+          company
+        )
       )
     `)
     .eq('user_id', userId)
     .order('applied_at', { ascending: false })
+
+  if (error) {
+    console.error('❌ Fetch applications error:', error)
+    return []
+  }
+
+  console.log('✅ Applications:', data)
+
   return data ?? []
 }
 
 // Job seeker: check if already applied
 export async function hasApplied(jobId: string, userId: string): Promise<boolean> {
-  const { data } = await getSupabase()
+  const { data, error } = await getSupabase()
     .from('applications')
     .select('id')
     .eq('job_id', jobId)
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
+
+  if (error) {
+    console.error('❌ hasApplied error:', error)
+    return false
+  }
+
   return !!data
 }
-
 // Job seeker: withdraw application
-export async function withdrawApplication(applicationId: string): Promise<void> {
-  await getSupabase()
+export async function withdrawApplication(applicationId: string): Promise<boolean> {
+  console.log('🚀 Withdraw application:', applicationId)
+
+  const { error } = await getSupabase()
     .from('applications')
     .delete()
     .eq('id', applicationId)
+
+  if (error) {
+    console.error('❌ Withdraw error:', error)
+    return false
+  }
+
+  return true
 }
 
 // Job poster: view all applications for a listing
@@ -73,12 +130,22 @@ export async function updateApplicationStatus(
   applicationId: string,
   status: ApplicationStatus
 ): Promise<Application | null> {
-  const { data } = await getSupabase()
+  console.log('🚀 Updating status:', { applicationId, status })
+
+  const { data, error } = await getSupabase()
     .from('applications')
     .update({ status })
     .eq('id', applicationId)
     .select()
     .single()
+
+  if (error) {
+    console.error('❌ Update status error:', error)
+    return null
+  }
+
+  console.log('✅ Updated:', data)
+
   return data
 }
 

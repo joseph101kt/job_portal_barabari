@@ -34,7 +34,7 @@ export function ApplicantCard({
 }: Props) {
   return (
     <Card elevation="raised" noPad>
-      <Pressable onPress={onView} className="p-4 active:bg-neutral-50">
+      <Pressable onPress={onView} className="p-4 active:bg-neutral-50 dark:active:bg-neutral-700">
         <View className="flex-row items-start gap-3">
           <Avatar uri={avatarUri} name={name} size="md" />
 

@@ -213,3 +213,80 @@ export type JobSeekerFull = JobSeeker & {
   projects:       Project[]
   certifications: Certification[]
 }
+
+
+// ───────────────── VALIDATION HELPERS ─────────────────
+
+export function isNonEmptyString(val: unknown): val is string {
+  return typeof val === 'string' && val.trim().length > 0
+}
+
+export function toNullableNumber(val: unknown): number | null {
+  if (val === null || val === undefined || val === '') return null
+  const num = Number(val)
+  return isNaN(num) ? null : num
+}
+
+export function toNullableString(val: unknown): string | null {
+  if (!val) return null
+  const str = String(val).trim()
+  return str.length ? str : null
+}
+
+export function toISODate(val: unknown): string | null {
+  if (!val) return null
+  const date = new Date(val as string)
+  return isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+export function validateCreateJobListing(
+  data: CreateJobListingInput
+): string | null {
+  if (!isNonEmptyString(data.title)) {
+    return 'Job title is required'
+  }
+
+  if (!data.employment_type) {
+    return 'Employment type is required'
+  }
+
+  if (!isNonEmptyString(data.description)) {
+    return 'Job description is required'
+  }
+
+  if (
+    data.salary_min != null &&
+    data.salary_max != null &&
+    data.salary_min > data.salary_max
+  ) {
+    return 'Min salary cannot exceed max salary'
+  }
+
+  return null
+}
+
+export function normalizeCreateJobListing(
+  data: CreateJobListingInput
+): Required<CreateJobListingInput> {
+  return {
+    poster_id: data.poster_id,
+
+    title: data.title.trim(),
+
+    description: toNullableString(data.description),
+
+    location: toNullableString(data.location),
+
+    is_remote: data.is_remote ?? false,
+
+    salary_min: toNullableNumber(data.salary_min),
+    salary_max: toNullableNumber(data.salary_max),
+
+    employment_type: data.employment_type ?? null,
+    experience_level: data.experience_level ?? null,
+
+    application_deadline: toISODate(data.application_deadline),
+
+    status: data.status ?? 'open',
+  }
+}

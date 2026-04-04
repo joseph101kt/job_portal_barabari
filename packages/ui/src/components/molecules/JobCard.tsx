@@ -125,7 +125,7 @@ export function JobCard({
               onPress={onApply}
               className="flex-1 py-3 items-center active:bg-primary-50"
             >
-              <Text className="text-sm font-semibold text-primary-600">Apply now</Text>
+              <Text className="text-sm font-semibold text-primary-600">View Details</Text>
             </Pressable>
           )}
         </View>
