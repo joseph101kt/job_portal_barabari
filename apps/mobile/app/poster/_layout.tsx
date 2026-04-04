@@ -7,7 +7,7 @@ import { TabBar } from '@my-app/ui'
 const POSTER_TABS = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊', activeIcon: '📊' },
   { key: 'chat',      label: 'Chat',      icon: '💬', activeIcon: '💬', badge: 0 },
-  { key: 'account',   label: 'Account',   icon: '👤', activeIcon: '👤' },
+  { key: 'profile',   label: 'Profile',   icon: '👤', activeIcon: '👤' },
 ]
 
 export default function PosterLayout() {
