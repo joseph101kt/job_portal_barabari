@@ -12,9 +12,11 @@ import {
   getMyApplications,
 } from '@my-app/supabase'
 import { useWindowDimensions } from 'react-native'
+
+import { ResumeUploadButton } from '../uploadResumeBtn'
 // ───────────────── PROFILE VIEW ─────────────────
 
-function ProfileView({ profile, seeker, onEdit }: any) {
+function ProfileView({ profile, seeker, onEdit, userId, onRefresh }: any) {
   return (
     <>
       <ProfileHeader
@@ -28,6 +30,21 @@ function ProfileView({ profile, seeker, onEdit }: any) {
       />
 
       <Divider />
+
+      <View className="px-5 pt-4">
+  <ResumeUploadButton
+    userId={userId}
+    hasResume={!!seeker?.headline}
+    showStatus
+    onSuccess={() => {
+      console.log('✅ Resume updated → refreshing profile')
+      onRefresh?.()
+    }}
+    onError={(err) => {
+      console.error('❌ Resume upload failed:', err)
+    }}
+  />
+</View>
 
       <View className="px-5 py-5 gap-5">
         <View className="gap-3">
@@ -444,11 +461,13 @@ export default function SeekerProfileScreen() {
           className="bg-white dark:bg-neutral-900"
           showsVerticalScrollIndicator={false}
         >
-          <ProfileView
-            profile={profile}
-            seeker={seeker}
-            onEdit={() => setMode('edit')}
-          />
+<ProfileView
+  profile={profile}
+  seeker={seeker}
+  onEdit={() => setMode('edit')}
+  userId={profile?.id}
+  onRefresh={load}
+/>
 
           <View className="px-5 pb-10">
             <Button

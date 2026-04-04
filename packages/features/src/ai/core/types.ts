@@ -3,84 +3,138 @@
 // ── Request ───────────────────────────────────────────────────────────────────
 
 export type AnalysisType =
-  | 'medical_report'
   | 'resume'
   | 'summarize'
 
 export type AnalysisRequest =
-  | { type: 'medical_report'; text: string }
-  | { type: 'resume';         text: string }
-  | { type: 'summarize';      text: string; context?: string }
+  | { type: 'resume'; text: string }
+  | { type: 'summarize'; text: string; context?: string }
 
-// ── Response shapes ───────────────────────────────────────────────────────────
-
-export type MedicalReportResult = {
-  patientInfo: {
-    name:    string
-    dob:     string
-    age:     string
-    gender:  string
-    height:  string
-    weight:  string
-    bmi:     string
-  }
-  vitals: {
-    bloodPressure: string
-    cholesterol:   string
-    a1c:           string
-    glucose:       string
-    hdl:           string
-    lastVisit:     string
-  }
-  conditions:    { name: string; date: string; notes: string }[]
-  familyHistory: { relation: string; age: string; status: string; cause: string }[]
-  medications:   { name: string; dose: string; frequency: string }[]
-  summary:       string
-  riskLevel:     'low' | 'medium' | 'high'
-  riskFactors:   string[]
-}
+// ── Resume Result (AI RAW OUTPUT) ─────────────────────────────────────────────
 
 export type ResumeResult = {
   candidate: {
-    name:     string
-    email:    string
-    phone:    string
+    name: string
+    email: string
+    phone: string
     location: string
   }
-  summary:         string
-  skills:          string[]
-  experienceLevel: 'junior' | 'mid' | 'senior' | 'lead'
+
+  headline: string
+  bio: string
+
+  experienceLevel: 'fresher' | 'junior' | 'mid' | 'senior'
   yearsExperience: number
-  experience: {
-    company:   string
-    role:      string
-    duration:  string
-    highlights: string[]
+
+  skills: {
+    name: string
+    category:
+      | 'frontend'
+      | 'backend'
+      | 'mobile'
+      | 'devops'
+      | 'data'
+      | 'design'
+      | 'management'
+      | 'other'
   }[]
+
+  experience: {
+    company: string
+    role: string
+    startDate: string
+    endDate: string
+    isCurrent: boolean
+    description: string
+    skills: string[]
+  }[]
+
   education: {
     institution: string
-    degree:      string
-    year:        string
+    degree: string
+    fieldOfStudy: string
+    startDate: string
+    endDate: string
+    isCurrent: boolean
   }[]
-  strengths:       string[]
-  gaps:            string[]
-  suggestions:     string[]
+
+  projects: {
+    title: string
+    description: string
+    skills: string[]
+    url: string
+  }[]
+
+  certifications: {
+    name: string
+    issuer: string
+    date: string
+  }[]
+
+  strengths: string[]
+  gaps: string[]
+  suggestions: string[]
 }
+
+// ── Resume DB Payload (NORMALIZED FOR SUPABASE) ───────────────────────────────
+
+export type ResumeDBPayload = {
+  jobSeeker: {
+    headline: string | null
+    bio: string | null
+    location: string | null
+    ai_summary: Record<string, unknown> | null
+  }
+
+  skills: {
+    name: string
+    category?: string
+  }[]
+
+  experiences: {
+    company_name: string
+    role: string
+    start_date: string | null
+    end_date: string | null
+    description: string | null
+  }[]
+
+  education: {
+    institution: string
+    degree: string | null
+    field_of_study: string | null
+    start_date: string | null
+    end_date: string | null
+  }[]
+
+  projects: {
+    title: string
+    description: string | null
+    project_url: string | null
+  }[]
+
+  certifications: {
+    name: string
+    issuer: string | null
+    issue_date: string | null
+  }[]
+}
+
+// ── Summary Result ────────────────────────────────────────────────────────────
 
 export type SummaryResult = {
-  summary:    string      // 2-3 sentence overview
-  keyPoints:  string[]   // bullet points
-  wordCount:  number     // of original text
+  summary: string
+  keyPoints: string[]
+  wordCount: number
 }
 
-// ── Union result ──────────────────────────────────────────────────────────────
+// ── Union Result ──────────────────────────────────────────────────────────────
 
 export type AnalysisResult =
-  | { type: 'medical_report'; data: MedicalReportResult }
-  | { type: 'resume';         data: ResumeResult }
-  | { type: 'summarize';      data: SummaryResult }
+  | { type: 'resume'; data: ResumeResult }
+  | { type: 'summarize'; data: SummaryResult }
 
-// ── Edge Function envelope ───────────────────────────────────────────────────
+// ── Edge Function Envelope ───────────────────────────────────────────────────
 
 export type EdgeRequest = {
   type: AnalysisType
@@ -89,5 +143,5 @@ export type EdgeRequest = {
 }
 
 export type EdgeResponse =
-  | { success: true;  result: AnalysisResult }
+  | { success: true; result: AnalysisResult }
   | { success: false; error: string }

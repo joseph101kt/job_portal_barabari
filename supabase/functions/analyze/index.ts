@@ -1,6 +1,7 @@
 // supabase/functions/analyze/index.ts
 
 import { PROMPTS } from './prompts.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL   = (key: string) =>
@@ -23,7 +24,7 @@ Deno.serve(async (req: Request) => {
       return errorResponse('Missing required fields: type, text', 400)
     }
 
-    if (!['medical_report', 'resume', 'summarize'].includes(type)) {
+    if (!['resume', 'summarize'].includes(type)) {
       return errorResponse(`Unknown analysis type: ${type}`, 400)
     }
 
@@ -36,11 +37,14 @@ Deno.serve(async (req: Request) => {
       return errorResponse('GEMINI_API_KEY secret is not set', 500)
     }
 
-    const prompt = type === 'summarize'
-      ? PROMPTS.summarize(text, context)
-      : type === 'medical_report'
-      ? PROMPTS.medical_report(text)
-      : PROMPTS.resume(text)
+    // For resume analysis, fetch existing skills to guide AI matching
+    let prompt: string
+    if (type === 'resume') {
+      const availableSkills = await fetchAvailableSkillNames(req)
+      prompt = PROMPTS.resume(text, availableSkills)
+    } else {
+      prompt = PROMPTS.summarize(text, context)
+    }
 
     const geminiRes = await fetch(GEMINI_URL(apiKey), {
       method:  'POST',
@@ -83,6 +87,22 @@ Deno.serve(async (req: Request) => {
     return errorResponse(message, 500)
   }
 })
+
+// Fetch skill names from DB to provide context to AI
+async function fetchAvailableSkillNames(req: Request): Promise<string[]> {
+  try {
+    const supabaseUrl     = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    if (!supabaseUrl || !supabaseAnonKey) return []
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const { data } = await supabase.from('skills').select('name').order('name')
+    return (data ?? []).map((s: { name: string }) => s.name)
+  } catch {
+    // Non-fatal — prompt works without this context
+    return []
+  }
+}
 
 function errorResponse(message: string, status: number): Response {
   return new Response(

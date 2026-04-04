@@ -50,6 +50,9 @@ export {
   subscribeToMessages,
 } from './queries/messages'
 
+
+export * from './queries/resume'
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type {
   Role,
