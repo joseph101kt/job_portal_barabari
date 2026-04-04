@@ -185,12 +185,6 @@ export default function PosterDashboardScreen() {
                       <Text className="text-sm font-medium text-primary-600">View applicants</Text>
                     </Pressable>
                     <View className="w-px bg-neutral-100 dark:bg-neutral-700" />
-                    <Pressable
-                      onPress={() => router.push({ pathname: '/poster/create-job', params: { editId: listing.id } })}
-                      className="flex-1 py-2.5 items-center active:bg-neutral-50"
-                    >
-                      <Text className="text-sm font-medium text-neutral-500">Edit</Text>
-                    </Pressable>
                   </View>
                 </Card>
               </Pressable>
