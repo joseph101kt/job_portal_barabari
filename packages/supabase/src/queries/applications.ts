@@ -110,21 +110,55 @@ export async function withdrawApplication(applicationId: string): Promise<boolea
 }
 
 // Job poster: view all applications for a listing
-export async function getApplicationsForListing(listingId: string): Promise<Application[]> {
-  const { data } = await getSupabase()
+export async function getApplicationsForListing(listingId: string) {
+  console.log('🚀 Fetching applications for listing:', listingId)
+
+  if (!listingId) {
+    console.error('❌ Missing listingId')
+    return []
+  }
+
+  const { data, error } = await getSupabase()
     .from('applications')
     .select(`
       *,
-      applicant:profiles (
-        id, full_name, avatar_url,
-        job_seeker:job_seekers ( headline, location, availability, ai_summary )
+      applicant:job_seekers (
+        id,
+        headline,
+        location,
+        profiles (
+          id,
+          full_name,
+          avatar_url
+        )
       )
     `)
     .eq('job_id', listingId)
     .order('applied_at', { ascending: false })
-  return data ?? []
-}
 
+  if (error) {
+    console.error('❌ Fetch applications error:', error)
+    return []
+  }
+
+  console.log('✅ Applications raw:', data)
+
+  // flatten structure for UI
+  const formatted = (data ?? []).map(app => ({
+    ...app,
+    applicant: {
+      id: app.applicant?.id,
+      name: app.applicant?.profiles?.full_name,
+      avatar: app.applicant?.profiles?.avatar_url,
+      headline: app.applicant?.headline,
+      location: app.applicant?.location,
+    },
+  }))
+
+  console.log('✅ Applications formatted:', formatted)
+
+  return formatted
+}
 // Job poster: update application status (shortlist / reject / hire)
 export async function updateApplicationStatus(
   applicationId: string,
