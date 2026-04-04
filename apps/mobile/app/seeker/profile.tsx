@@ -3,20 +3,35 @@ import { View, Text, ScrollView, Pressable } from 'react-native'
 import {
   PageLayout, ProfileHeader, Card,
   SectionHeader, Divider, Button, Input,
-  Toast,
-  ApplicationCard,
+  Toast, ThemeToggle
 } from '@my-app/ui'
 import {
-  getProfile, getJobSeeker, getSupabase,
+  getProfile, getSupabase,
   type Profile, type JobSeeker,
-  getMyApplications,
+  getFullResume, upsertResume
 } from '@my-app/supabase'
-import { useWindowDimensions } from 'react-native'
 
 import { ResumeUploadButton } from '../uploadResumeBtn'
+
+// ───────────────── HELPERS ─────────────────
+
+function formatDate(date?: string) {
+  if (!date) return ''
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+    })
+  } catch {
+    return ''
+  }
+}
+
+
+
 // ───────────────── PROFILE VIEW ─────────────────
 
-function ProfileView({ profile, seeker, onEdit, userId, onRefresh }: any) {
+function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh }: any) {
   return (
     <>
       <ProfileHeader
@@ -24,7 +39,6 @@ function ProfileView({ profile, seeker, onEdit, userId, onRefresh }: any) {
         avatarUri={profile?.avatar_url ?? undefined}
         headline={seeker?.headline ?? undefined}
         location={seeker?.location ?? undefined}
-        availability={seeker?.availability ?? undefined}
         isOwn
         onEdit={onEdit}
       />
@@ -32,321 +46,268 @@ function ProfileView({ profile, seeker, onEdit, userId, onRefresh }: any) {
       <Divider />
 
       <View className="px-5 pt-4">
-  <ResumeUploadButton
-    userId={userId}
-    hasResume={!!seeker?.headline}
-    showStatus
-    onSuccess={() => {
-      console.log('✅ Resume updated → refreshing profile')
-      onRefresh?.()
-    }}
-    onError={(err) => {
-      console.error('❌ Resume upload failed:', err)
-    }}
-  />
-</View>
+        <ResumeUploadButton
+          userId={userId}
+          hasResume={!!seeker?.headline}
+          showStatus
+          onSuccess={onRefresh}
+        />
+      </View>
 
-      <View className="px-5 py-5 gap-5">
+      <View className="px-5 py-6 gap-8">
+
+        {/* About */}
         <View className="gap-3">
-          <SectionHeader
-            title="About"
-            action={{ label: 'Edit', onPress: onEdit }}
-          />
-
+          <SectionHeader title="About" action={{ label: 'Edit', onPress: onEdit }} />
           {seeker?.bio ? (
-            <Text className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
+            <Text className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
               {seeker.bio}
             </Text>
           ) : (
-            <Pressable
-              onPress={onEdit}
-              className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-2xl py-4 items-center"
-            >
-              <Text className="text-sm text-neutral-400 dark:text-neutral-500">
+            <Pressable onPress={onEdit}>
+              <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
                 + Add bio
               </Text>
             </Pressable>
           )}
         </View>
+
+        {/* Skills */}
+        <View className="gap-3">
+          <SectionHeader title="Skills" />
+          {resume?.skills?.length ? (
+            <View className="flex-row flex-wrap gap-2">
+              {resume.skills.map((s: any) => (
+                <View
+                  key={s.id}
+                  className="px-3 py-1 rounded-full
+                  bg-neutral-100 dark:bg-neutral-800
+                  border border-neutral-200 dark:border-neutral-700"
+                >
+                  <Text className="text-sm text-neutral-800 dark:text-neutral-200">
+                    {s.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
+              + Add skills
+            </Text>
+          )}
+        </View>
+
+        {/* Experience */}
+        <View className="gap-3">
+          <SectionHeader title="Experience" />
+          {resume?.experiences?.length ? (
+            resume.experiences.map((exp: any) => (
+              <Card key={exp.id} className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                <Text className="text-base font-semibold text-neutral-900 dark:text-white">
+                  {exp.role}
+                </Text>
+                <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {exp.company_name}
+                </Text>
+                <Text className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                  {formatDate(exp.start_date)} — {exp.end_date ? formatDate(exp.end_date) : 'Present'}
+                </Text>
+                {exp.description && (
+                  <Text className="text-sm text-neutral-600 dark:text-neutral-300 mt-2">
+                    {exp.description}
+                  </Text>
+                )}
+              </Card>
+            ))
+          ) : (
+            <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
+              + Add experience
+            </Text>
+          )}
+        </View>
+
+        {/* Education */}
+        <View className="gap-3">
+          <SectionHeader title="Education" />
+          {resume?.education?.length ? (
+            resume.education.map((edu: any) => (
+              <Card key={edu.id} className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                <Text className="text-base font-semibold text-neutral-900 dark:text-white">
+                  {edu.degree || 'Degree'}
+                </Text>
+                <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {edu.institution}
+                </Text>
+                <Text className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                  {formatDate(edu.start_date)} — {edu.end_date ? formatDate(edu.end_date) : 'Present'}
+                </Text>
+              </Card>
+            ))
+          ) : (
+            <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
+              + Add education
+            </Text>
+          )}
+        </View>
+
+        {/* Theme */}
+        <View className="gap-3">
+          <SectionHeader title="Appearance" />
+          <ThemeToggle variant="row" />
+        </View>
+
       </View>
     </>
   )
 }
 
-// ───────────────── API HELPERS ─────────────────
-
-async function updateProfile(userId: string, data: { full_name: string }) {
-  const { error } = await getSupabase()
-    .from('profiles')
-    .update(data)
-    .eq('id', userId)
-
-  if (error) throw error
-}
-
-async function updateJobSeeker(userId: string, data: Partial<JobSeeker>) {
-  const { error } = await getSupabase()
-    .from('job_seekers')
-    .update(data)
-    .eq('id', userId)
-
-  if (error) throw error
-}
-
 // ───────────────── EDIT VIEW ─────────────────
 
-function ProfileEdit({ profile, seeker, onCancel, onSave }: any) {
+function ProfileEdit({ profile, seeker, resume, onCancel, onSave }: any) {
   const [name, setName] = useState(profile?.full_name ?? '')
   const [headline, setHeadline] = useState(seeker?.headline ?? '')
   const [location, setLocation] = useState(seeker?.location ?? '')
   const [bio, setBio] = useState(seeker?.bio ?? '')
 
+
+
+  const [experiences, setExperiences] = useState(resume?.experiences ?? [])
+  const [education, setEducation] = useState(resume?.education ?? [])
+
+  function update(list: any[], setter: any, i: number, field: string, value: string) {
+    const copy = [...list]
+    copy[i] = { ...copy[i], [field]: value }
+    setter(copy)
+  }
+
+  const [skills, setSkills] = useState<string[]>(
+    resume?.skills?.map((s: any) => s.name) ?? []
+  )
+
+  const [skillInput, setSkillInput] = useState('')
+
+  function addSkill(value: string) {
+  const cleaned = value.trim()
+  if (!cleaned) return
+
+  if (skills.includes(cleaned)) return // prevent duplicates
+
+  setSkills(prev => [...prev, cleaned])
+  setSkillInput('')
+}
+
+function removeSkill(index: number) {
+  setSkills(prev => prev.filter((_, i) => i !== index))
+}
+
   return (
-    <ScrollView
-      contentContainerClassName="px-5 py-5 gap-5 bg-white dark:bg-neutral-900"
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView contentContainerClassName="px-5 py-6 gap-8">
+
       <SectionHeader title="Edit Profile" />
 
-      <Input label="Full name *" value={name} onChangeText={setName} />
+      <Input label="Full name" value={name} onChangeText={setName} />
       <Input label="Headline" value={headline} onChangeText={setHeadline} />
       <Input label="Location" value={location} onChangeText={setLocation} />
+      <Input label="Bio" value={bio} onChangeText={setBio} multiline />
 
-      <Input
-        label="Bio"
-        value={bio}
-        onChangeText={setBio}
-        multiline
-        numberOfLines={5}
-        style={{ minHeight: 100, textAlignVertical: 'top' }}
+<View className="gap-3">
+  <SectionHeader title="Skills" />
+
+  {/* Chips */}
+  <View className="flex-row flex-wrap gap-2">
+    {skills.map((skill, i) => (
+      <View
+        key={i}
+        className="flex-row items-center px-3 py-1 rounded-full
+        bg-neutral-100 dark:bg-neutral-800
+        border border-neutral-200 dark:border-neutral-700"
+      >
+        <Text className="text-sm text-neutral-800 dark:text-neutral-200">
+          {skill}
+        </Text>
+
+        <Pressable onPress={() => removeSkill(i)}>
+          <Text className="ml-2 text-neutral-500 dark:text-neutral-400">
+            ✕
+          </Text>
+        </Pressable>
+      </View>
+    ))}
+  </View>
+
+  {/* Input */}
+<Input
+  label="Add skill"
+  value={skillInput}
+  onChangeText={(text) => {
+    // if comma typed
+    if (text.includes(',')) {
+      const parts = text.split(',')
+
+      parts.forEach(part => {
+        const cleaned = part.trim()
+        if (cleaned) addSkill(cleaned)
+      })
+
+      setSkillInput('') // clear input
+    } else {
+      setSkillInput(text)
+    }
+  }}
+  onSubmitEditing={() => addSkill(skillInput)}
+/>
+</View>
+
+      {/* Experience */}
+      <SectionHeader title="Experience" />
+
+      {experiences.map((exp: any, i: number) => (
+        <View key={i} className="gap-2 p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+          <Input label="Role" value={exp.role} onChangeText={(v) => update(experiences, setExperiences, i, 'role', v)} />
+          <Input label="Company" value={exp.company_name} onChangeText={(v) => update(experiences, setExperiences, i, 'company_name', v)} />
+          <Input label="Start Date (YYYY-MM)" value={exp.start_date} onChangeText={(v) => update(experiences, setExperiences, i, 'start_date', v)} />
+          <Input label="End Date (YYYY-MM)" value={exp.end_date} onChangeText={(v) => update(experiences, setExperiences, i, 'end_date', v)} />
+        </View>
+      ))}
+
+      <Button label="+ Add Experience" onPress={() =>
+        setExperiences([...experiences, { role: '', company_name: '', start_date: '', end_date: '' }])
+      } />
+
+      {/* Education */}
+      <SectionHeader title="Education" />
+
+      {education.map((edu: any, i: number) => (
+        <View key={i} className="gap-2 p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+          <Input label="Degree" value={edu.degree} onChangeText={(v) => update(education, setEducation, i, 'degree', v)} />
+          <Input label="Institution" value={edu.institution} onChangeText={(v) => update(education, setEducation, i, 'institution', v)} />
+          <Input label="Start Date (YYYY-MM)" value={edu.start_date} onChangeText={(v) => update(education, setEducation, i, 'start_date', v)} />
+          <Input label="End Date (YYYY-MM)" value={edu.end_date} onChangeText={(v) => update(education, setEducation, i, 'end_date', v)} />
+        </View>
+      ))}
+
+      <Button label="+ Add Education" onPress={() =>
+        setEducation([...education, { degree: '', institution: '', start_date: '', end_date: '' }])
+      } />
+
+      <Button
+        label="Save"
+        onPress={() =>
+          onSave({
+            name,
+            headline,
+            location,
+            bio,
+            skills,
+            experiences,
+            education,
+          })
+        }
       />
 
-      <View className="flex-col gap-3 pt-4">
-        <Button
-          label="Cancel"
-          variant="ghost"
-          fullWidth
-          onPress={onCancel}
-        />
+      <Button label="Cancel" variant="ghost" onPress={onCancel} />
 
-        <Button
-          label="Save"
-          fullWidth
-          onPress={() => onSave({ name, headline, location, bio })}
-        />
-      </View>
     </ScrollView>
-  )
-}
-
-// ───────────────── DASHBOARD VIEW ─────────────────
-
-function DashboardView() {
-  const [applications, setApplications] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'all' | 'applied' | 'shortlisted' | 'rejected' | 'hired'>('all')
-  const [showFilters, setShowFilters] = useState(false)
-
-  const { width } = useWindowDimensions()
-  const isSmall = width < 360
-  const isMedium = width < 500
-
-  useEffect(() => {
-    load()
-  }, [])
-
-  async function load() {
-    try {
-      console.log('🚀 Loading applications...')
-
-      const { data: { user } } = await getSupabase().auth.getUser()
-
-      if (!user) {
-        Toast.showError('User not authenticated')
-        return
-      }
-
-      const apps = await getMyApplications(user.id)
-      setApplications(apps)
-    } catch (err) {
-      console.error('❌ Dashboard load error:', err)
-      Toast.showError('Failed to load applications')
-    }
-
-    setLoading(false)
-  }
-
-  // ───────── FILTER LOGIC ─────────
-
-  const filteredApps =
-    activeTab === 'all'
-      ? applications
-      : applications.filter(app => app.status === activeTab)
-
-  const stats = {
-    applied: applications.filter(a => a.status === 'applied').length,
-    shortlisted: applications.filter(a => a.status === 'shortlisted').length,
-    rejected: applications.filter(a => a.status === 'rejected').length,
-    hired: applications.filter(a => a.status === 'hired').length,
-  }
-
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
-        <Text className="text-neutral-400">Loading applications...</Text>
-      </View>
-    )
-  }
-
-  return (
-    <View className="flex-1 bg-white dark:bg-neutral-900">
-
-      {/* ───────── STATS ───────── */}
-      <View className="px-5 pt-5 pb-3 flex-row justify-between">
-        <Stat label="Applied" value={stats.applied} />
-        <Stat label="Shortlisted" value={stats.shortlisted} />
-        <Stat label="Rejected" value={stats.rejected} />
-        <Stat label="Hired" value={stats.hired} />
-      </View>
-
-      {/* ───────── FILTER UI ───────── */}
-      {isSmall ? (
-        <View className="px-5 pb-3">
-          <Pressable
-            onPress={() => setShowFilters(true)}
-            className="flex-row items-center justify-between bg-neutral-100 dark:bg-neutral-800 px-4 py-3 rounded-xl"
-          >
-            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Filters
-            </Text>
-            <Text className="text-xs text-neutral-400 capitalize">
-              {activeTab}
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View className="px-5 pb-3">
-          <View className="flex-row bg-neutral-100 dark:bg-neutral-800 rounded-xl p-1">
-            {['all', 'applied', 'shortlisted', 'rejected', 'hired'].map(tab => {
-              const isActive = activeTab === tab
-
-              return (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveTab(tab as any)}
-                  className={`rounded-lg items-center justify-center
-                    ${isMedium ? 'px-3 py-1.5' : 'px-4 py-2'}
-                    ${isActive ? 'bg-white dark:bg-neutral-900 shadow-sm' : ''}
-                  `}
-                >
-                  <Text
-                    className={`font-medium capitalize
-                      ${isMedium ? 'text-xs' : 'text-sm'}
-                      ${isActive
-                        ? 'text-neutral-900 dark:text-white'
-                        : 'text-neutral-500 dark:text-neutral-400'
-                      }
-                    `}
-                  >
-                    {tab}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* ───────── LIST ───────── */}
-      <ScrollView
-        contentContainerClassName="px-5 pb-6 gap-4"
-        showsVerticalScrollIndicator={false}
-      >
-        {filteredApps.length === 0 ? (
-          <View className="items-center justify-center py-20">
-            <Text className="text-neutral-400 text-center">
-              No {activeTab === 'all' ? '' : activeTab} applications found
-            </Text>
-          </View>
-        ) : (
-          filteredApps.map(app => (
-            <ApplicationCard
-              key={app.id}
-              title={app.job?.title ?? 'Unknown role'}
-              company={app.job?.poster?.company}
-              location={app.job?.location}
-              isRemote={app.job?.is_remote}
-              salaryMin={app.job?.salary_min}
-              salaryMax={app.job?.salary_max}
-              employmentType={app.job?.employment_type}
-              appliedAt={new Date(app.applied_at).toLocaleDateString()}
-              status={app.status}
-              onPress={() => {
-                console.log('View job:', app.job?.id)
-              }}
-            />
-          ))
-        )}
-      </ScrollView>
-
-      {/* ───────── FIXED MODAL (TOP LAYER) ───────── */}
-      {showFilters && (
-        <View
-          pointerEvents="box-none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9999,
-            elevation: 9999, // Android fix
-          }}
-        >
-          {/* BACKDROP */}
-          <Pressable
-            onPress={() => setShowFilters(false)}
-            className="absolute inset-0 bg-black/40"
-          />
-
-          {/* SHEET */}
-          <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 p-5 rounded-t-3xl gap-3">
-            {['all', 'applied', 'shortlisted', 'rejected', 'hired'].map(tab => (
-              <Pressable
-                key={tab}
-                onPress={() => {
-                  setActiveTab(tab as any)
-                  setShowFilters(false)
-                }}
-                className="py-3"
-              >
-                <Text className="text-base capitalize text-neutral-800 dark:text-neutral-200">
-                  {tab}
-                </Text>
-              </Pressable>
-            ))}
-
-            <Pressable
-              onPress={() => setShowFilters(false)}
-              className="py-3 items-center"
-            >
-              <Text className="text-neutral-400">Cancel</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-    </View>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <View className="items-center">
-      <Text className="text-lg font-semibold text-neutral-900 dark:text-white">
-        {value}
-      </Text>
-      <Text className="text-xs text-neutral-400">{label}</Text>
-    </View>
   )
 }
 
@@ -355,140 +316,73 @@ function Stat({ label, value }: { label: string; value: number }) {
 export default function SeekerProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [seeker, setSeeker] = useState<JobSeeker | null>(null)
+  const [resume, setResume] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-
-  const [mode, setMode] = useState<'profile' | 'edit' | 'dashboard'>('profile')
+  const [mode, setMode] = useState<'profile' | 'edit'>('profile')
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    console.log('🚀 Loading profile...')
-
     const { data: { user } } = await getSupabase().auth.getUser()
+    if (!user) return
 
-    if (!user) {
-      console.error('❌ No user')
-      return
-    }
-
-    const [p, s] = await Promise.all([
+    const [p, full] = await Promise.all([
       getProfile(user.id),
-      getJobSeeker(user.id),
+      getFullResume(user.id),
     ])
 
-    console.log('📦 Profile:', p)
-    console.log('📦 Seeker:', s)
-
     setProfile(p)
-    setSeeker(s)
+    setSeeker(full?.profile)
+    setResume(full)
     setLoading(false)
   }
 
-  async function handleSave(data: any) {
-    console.log('📦 Update payload:', data)
+async function handleSave(data: any) {
+  try {
+    const { data: { user } } = await getSupabase().auth.getUser()
+    if (!user) return
 
-    // ✅ VALIDATION
-    if (!data.name?.trim()) {
-      Toast.showError('Full name is required')
-      return
-    }
+    await upsertResume(user.id, {
+      ...data,
+      skills: data.skills.map((name: string) => ({ name })),
+      experiences: data.experiences,
+      education: data.education,
+    })
 
-    try {
-      const { data: { user } } = await getSupabase().auth.getUser()
+    Toast.showSuccess('Profile updated')
+    setMode('profile')
+    load()
 
-      if (!user) {
-        Toast.showError('User not authenticated')
-        return
-      }
-
-      await Promise.all([
-        updateProfile(user.id, {
-          full_name: data.name.trim(),
-        }),
-        updateJobSeeker(user.id, {
-          headline: data.headline?.trim() || null,
-          location: data.location?.trim() || null,
-          bio: data.bio?.trim() || null,
-        }),
-      ])
-
-      // ✅ LOCAL STATE UPDATE
-      setProfile(prev =>
-        prev ? { ...prev, full_name: data.name.trim() } : prev
-      )
-
-      setSeeker(prev =>
-        prev
-          ? {
-              ...prev,
-              headline: data.headline || null,
-              location: data.location || null,
-              bio: data.bio || null,
-            }
-          : prev
-      )
-
-      Toast.showSuccess('Profile updated')
-      setMode('profile')
-
-    } catch (err) {
-      console.error('❌ Update error:', err)
-      Toast.showError('Failed to update profile')
-    }
+  } catch (err) {
+    console.error(err)
+    Toast.showError('Failed to update')
   }
+}
 
-  if (loading) {
-    return (
-      <PageLayout>
-        <View className="flex-1 bg-white dark:bg-neutral-900" />
-      </PageLayout>
-    )
-  }
+  if (loading) return <PageLayout><View /></PageLayout>
 
   return (
-    <PageLayout
-      header={{
-        title:
-          mode === 'profile' ? 'Profile' :
-          mode === 'edit' ? 'Edit Profile' :
-          'Dashboard',
-      }}
-      noPad
-      noScroll={mode !== 'edit'}
-    >
-      {mode === 'profile' && (
-        <ScrollView
-          className="bg-white dark:bg-neutral-900"
-          showsVerticalScrollIndicator={false}
-        >
-<ProfileView
-  profile={profile}
-  seeker={seeker}
-  onEdit={() => setMode('edit')}
-  userId={profile?.id}
-  onRefresh={load}
-/>
-
-          <View className="px-5 pb-10">
-            <Button
-              label="Go to dashboard"
-              variant="secondary"
-              onPress={() => setMode('dashboard')}
-            />
-          </View>
+    <PageLayout header={{ title: 'Profile' }}>
+      {mode === 'profile' ? (
+        <ScrollView>
+          <ProfileView
+            profile={profile}
+            seeker={seeker}
+            resume={resume}
+            userId={profile?.id}
+            onEdit={() => setMode('edit')}
+            onRefresh={load}
+          />
         </ScrollView>
-      )}
-
-      {mode === 'edit' && (
+      ) : (
         <ProfileEdit
           profile={profile}
           seeker={seeker}
+          resume={resume}
           onCancel={() => setMode('profile')}
           onSave={handleSave}
         />
       )}
-
-      {mode === 'dashboard' && <DashboardView />}
     </PageLayout>
   )
 }

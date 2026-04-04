@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useColorScheme, TouchableOpacity, Text } from 'react-native';
+import { useColorScheme, TouchableOpacity, Text, View } from 'react-native';
 import { useColorScheme as useNativeWind } from 'nativewind';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Switch } from 'react-native'
 
 import { colors as baseColors } from './../tokens/colors';
 
@@ -134,32 +135,74 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         {children}
 
-        {/* FAB */}
-        <TouchableOpacity
-          onPress={toggleTheme}
-          activeOpacity={0.8}
-          style={{
-            position: 'absolute',
-            bottom: 24,
-            right: 20,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            backgroundColor: currentTheme.colors.primary,
-            justifyContent: 'center',
-            alignItems: 'center',
-            elevation: 5,
-            shadowColor: '#000',
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            shadowOffset: { width: 0, height: 2 },
-          }}
-        >
-          <Text style={{ fontSize: 20 }}>
-            {theme === 'light' ? '🌙' : '☀️'}
-          </Text>
-        </TouchableOpacity>
       </SafeAreaProvider>
     </ThemeContext.Provider>
   );
+}
+
+
+export function ThemeToggle({
+  variant = 'button',
+}: {
+  variant?: 'button' | 'row'
+}) {
+  const { theme, toggleTheme } = useTheme()
+  const isDark = theme === 'dark'
+
+  if (variant === 'row') {
+    return (
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 12,
+        }}
+      >
+        {/* 👇 Only THIS is touchable */}
+        <TouchableOpacity onPress={toggleTheme} activeOpacity={0.7}>
+          <Text
+            style={{
+              fontSize: 16,
+              marginRight: 12,
+              color: isDark ? '#fff' : '#000',
+            }}
+          >
+            Dark Mode
+          </Text>
+        </TouchableOpacity>
+
+        {/* 👇 Switch is independent */}
+        <Switch
+          value={isDark}
+          onValueChange={toggleTheme}
+          trackColor={{ false: '#ccc', true: '#4f46e5' }}
+          thumbColor="#fff"
+        />
+      </View>
+    )
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={toggleTheme}
+      style={{
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        backgroundColor: isDark ? '#1f2937' : '#e5e7eb',
+      }}
+    >
+      <Text
+        style={{
+          textAlign: 'center',
+          fontSize: 14,
+          color: isDark ? '#fff' : '#000',
+        }}
+      >
+        {isDark
+          ? 'Switch to Light Mode ☀️'
+          : 'Switch to Dark Mode 🌙'}
+      </Text>
+    </TouchableOpacity>
+  )
 }

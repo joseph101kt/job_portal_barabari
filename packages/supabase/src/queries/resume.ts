@@ -120,16 +120,20 @@ async function resolveSkills(
 
   const ilikeMatches: { name: string; id: string }[] = []
   for (const name of stillMissing) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('skills')
       .select('id, name')
-      .ilike('name', name)
+      .ilike('name', `%${name}%`)
       .limit(1)
-      .single()
+      .maybeSingle()
+
+    if (error) {
+      console.warn('[resolveSkills] ilike failed:', error.message)
+      continue
+    }
 
     if (data) {
       ilikeMatches.push({ id: data.id, name: data.name })
-      foundNames.add(name.toLowerCase())
     }
   }
 

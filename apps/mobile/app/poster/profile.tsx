@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, ScrollView } from 'react-native'
 import {
   PageLayout, ProfileHeader, SectionHeader,
-  Divider, Button, Input, Toast,
+  Divider, Button, Input, Toast, ThemeToggle,
 } from '@my-app/ui'
 import {
   getProfile, updateProfile,
@@ -19,8 +19,8 @@ function PosterProfileView({ profile, poster, onEdit }: any) {
       <ProfileHeader
         name={profile?.full_name ?? 'Your Name'}
         avatarUri={profile?.avatar_url ?? undefined}
-        headline={poster?.company ?? 'Your Company'}
-        location={poster?.website ?? undefined}
+        headline={poster?.company || 'Add your company'}
+        location={poster?.website || undefined}
         isOwn
         onEdit={onEdit}
       />
@@ -29,6 +29,7 @@ function PosterProfileView({ profile, poster, onEdit }: any) {
 
       <View className="px-5 py-5 gap-5">
 
+        {/* ── Company Section ── */}
         <View className="gap-3">
           <SectionHeader title="Company" action={{ label: 'Edit', onPress: onEdit }} />
 
@@ -37,8 +38,16 @@ function PosterProfileView({ profile, poster, onEdit }: any) {
               {poster.description}
             </Text>
           ) : (
-            <Text className="text-neutral-400">+ Add company description</Text>
+            <Text className="text-neutral-400">
+              + Add company description to attract candidates
+            </Text>
           )}
+        </View>
+
+        {/* ── Appearance Section ── */}
+        <View className="gap-3">
+          <SectionHeader title="Appearance" />
+          <ThemeToggle variant="row" />
         </View>
 
       </View>
@@ -98,46 +107,64 @@ export default function PosterProfileScreen() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data: { user } } = await getSupabase().auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user } } = await getSupabase().auth.getUser()
+      if (!user) return
 
-    const [p, po] = await Promise.all([
-      getProfile(user.id),
-      getJobPoster(user.id),
-    ])
+      const [p, po] = await Promise.all([
+        getProfile(user.id),
+        getJobPoster(user.id),
+      ])
 
-    setProfile(p)
-    setPoster(po)
-    setLoading(false)
+      setProfile(p)
+      setPoster(po)
+    } catch (err) {
+      console.error('❌ load profile error:', err)
+      Toast.showError('Failed to load profile')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSave(data: any) {
-    const { data: { user } } = await getSupabase().auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user } } = await getSupabase().auth.getUser()
+      if (!user) return
 
-    console.log('📦 Saving profile:', data)
+      console.log('📦 Saving profile:', data)
 
-    // update profile
-    await updateProfile(user.id, {
-      full_name: data.name,
-    })
+      // update profile
+      const updatedProfile = await updateProfile(user.id, {
+        full_name: data.name,
+      })
 
-    // update poster
-    const updatedPoster = await upsertJobPoster(user.id, {
-      company: data.company,
-      website: data.website,
-      description: data.description,
-    })
+      // update poster
+      const updatedPoster = await upsertJobPoster(user.id, {
+        company: data.company,
+        website: data.website,
+        description: data.description,
+      })
 
-    setProfile(prev => prev ? { ...prev, full_name: data.name } : prev)
-    setPoster(updatedPoster)
+      if (!updatedPoster) throw new Error('Poster update failed')
 
-    Toast.showSuccess('Profile updated')
-    setMode('profile')
+      setProfile(updatedProfile ?? profile)
+      setPoster(updatedPoster)
+
+      Toast.showSuccess('Profile updated')
+      setMode('profile')
+
+    } catch (err) {
+      console.error('❌ save failed:', err)
+      Toast.showError('Failed to update profile')
+    }
   }
 
   if (loading) {
-    return <PageLayout><View className="flex-1" /></PageLayout>
+    return (
+      <PageLayout>
+        <View className="flex-1" />
+      </PageLayout>
+    )
   }
 
   return (

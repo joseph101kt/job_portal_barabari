@@ -42,6 +42,7 @@ export { FormSection }   from './components/organisms/FormSection'
 
 // ── Theme Provider ──────────────────────────────────────────────────────────────
 export { ThemeProvider } from './components/ThemeProvider'
+export { ThemeToggle }      from './components/ThemeProvider'
 
 
 
