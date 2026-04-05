@@ -157,9 +157,9 @@ function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSig
         </View>
 
       </View>
-      <View className="mt-6">
+      <View className="px-5 pt-4">
         <Button
-          className='bg-red-500 border-red-300'
+          className='bg-red-500 border-red-400'
           label="Sign Out"
           onPress={onSignOut}
         />
