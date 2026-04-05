@@ -1,15 +1,22 @@
 import React, { useEffect, useState } from 'react'
 import {
-  View, Text, FlatList, Pressable, RefreshControl, Alert,
+  View, Text, FlatList, Pressable, RefreshControl,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import {
   PageLayout, ApplicantCard, EmptyState, Toast,
 } from '@my-app/ui'
 import {
-  getApplicationsForListing, getListingById,
-  updateApplicationStatus, createInterview,
-  getSupabase, type Application, type ApplicationStatus,
+  getApplicationsForListing,
+  getListingById,
+  updateApplicationStatus,
+  createInterview,
+  getSupabase,
+  getProfile,
+  getJobSeeker,
+  getFullResume,
+  type Application,
+  type ApplicationStatus,
 } from '@my-app/supabase'
 
 const TABS: { key: ApplicationStatus | 'all'; label: string }[] = [
@@ -20,6 +27,29 @@ const TABS: { key: ApplicationStatus | 'all'; label: string }[] = [
   { key: 'rejected', label: 'Rejected' },
 ]
 
+type ResumeData = {
+  experiences?: {
+    role: string
+    company_name?: string
+    start_date?: string
+    end_date?: string
+  }[]
+  education?: {
+    degree: string
+    institution?: string
+  }[]
+  skills?: {
+    name: string
+  }[]
+}
+
+type EnrichedApplication = Application & {
+  profile?: any
+  jobSeeker?: any
+  skills?: { name: string }[]
+  resume?: ResumeData | null
+}
+
 export default function JobApplicantsScreen() {
   const params = useLocalSearchParams()
   const id = params?.id as string | undefined
@@ -27,13 +57,9 @@ export default function JobApplicantsScreen() {
   const router = useRouter()
 
   const [title, setTitle] = useState('')
-  const [apps, setApps] = useState<Application[]>([])
+  const [apps, setApps] = useState<EnrichedApplication[]>([])
   const [activeTab, setActiveTab] = useState<ApplicationStatus | 'all'>('all')
   const [refreshing, setRefreshing] = useState(false)
-
-  // 🔥 DEBUG
-  console.log('🧪 Route params:', params)
-  console.log('🧪 Listing ID:', id)
 
   useEffect(() => {
     load()
@@ -53,11 +79,39 @@ export default function JobApplicantsScreen() {
         getApplicationsForListing(id),
       ])
 
-      console.log('🧪 Listing:', listing)
-      console.log('🧪 Applications:', applications)
+      // 🔥 Enrich data (frontend only)
+      const enrichedApps = await Promise.all(
+        (applications ?? []).map(async (app) => {
+          try {
+            const [profile, jobSeeker, resume] = await Promise.all([
+              getProfile(app.user_id),
+              getJobSeeker(app.user_id),
+              getFullResume(app.user_id),
+            ])
+
+            return {
+              ...app,
+              profile,
+              jobSeeker,
+              skills: resume?.skills ?? [],
+              resume, 
+            }
+          } catch (err) {
+            console.error('❌ Enrich error:', err)
+            return {
+              ...app,
+              profile: null,
+              jobSeeker: null,
+              skills: [],
+              resume: null,
+            }
+          }
+        })
+      )
 
       setTitle(listing?.title ?? 'Applicants')
-      setApps(applications ?? [])
+      setApps(enrichedApps)
+      console.log('✅ Applicants loaded:', enrichedApps)
 
     } catch (err) {
       console.error('❌ Load applicants error:', err)
@@ -74,8 +128,6 @@ export default function JobApplicantsScreen() {
   // ───────── STATUS ACTIONS ─────────
 
   async function updateStatus(appId: string, status: ApplicationStatus) {
-    console.log('🚀 Updating status:', { appId, status })
-
     const updated = await updateApplicationStatus(appId, status)
 
     if (!updated) {
@@ -88,43 +140,38 @@ export default function JobApplicantsScreen() {
     )
   }
 
-async function handleReject(app: Application) {
-  console.log('🚀 Reject clicked:', app.id)
+  async function handleReject(app: EnrichedApplication) {
+    try {
+      const updated = await updateApplicationStatus(app.id, 'rejected')
 
-  try {
-    const updated = await updateApplicationStatus(app.id, 'rejected')
+      if (!updated) {
+        Toast.showError('Failed to reject')
+        return
+      }
 
-    if (!updated) {
-      Toast.showError('Failed to reject')
-      return
-    }
-
-    setApps(prev =>
-      prev.map(a =>
-        a.id === app.id ? { ...a, status: 'rejected' } : a
+      setApps(prev =>
+        prev.map(a =>
+          a.id === app.id ? { ...a, status: 'rejected' } : a
+        )
       )
-    )
 
-    Toast.showSuccess('Application rejected')
+      Toast.showSuccess('Application rejected')
 
-  } catch (err) {
-    console.error('❌ Reject error:', err)
-    Toast.showError('Something went wrong')
+    } catch (err) {
+      console.error('❌ Reject error:', err)
+      Toast.showError('Something went wrong')
+    }
   }
-}
-  async function handleInterview(app: Application) {
+
+  async function handleInterview(app: EnrichedApplication) {
     const { data: { user } } = await getSupabase().auth.getUser()
     if (!user) return
-
-    console.log('🚀 Creating interview for:', app.id)
 
     const interview = await createInterview({
       candidate_id: app.user_id,
       interviewer_id: user.id,
       listing_id: id,
     })
-
-    console.log('🧪 Interview:', interview)
 
     if (interview) {
       router.push({
@@ -139,10 +186,7 @@ async function handleReject(app: Application) {
   const filtered =
     activeTab === 'all'
       ? apps
-      : apps.filter(a => {
-          console.log('🧪 Filtering:', a.status, 'vs', activeTab)
-          return a.status === activeTab
-        })
+      : apps.filter(a => a.status === activeTab)
 
   const getCount = (status: ApplicationStatus | 'all') =>
     status === 'all'
@@ -169,11 +213,9 @@ async function handleReject(app: Application) {
       noPad
     >
 
-
-      {/* ───────── TABS ───────── */}
+      {/* Tabs */}
       <View className="px-5 pt-2 pb-2">
         <View className="flex-row bg-neutral-100 dark:bg-neutral-800 rounded-xl p-1 gap-1">
-
           {TABS.map(tab => {
             const isActive = activeTab === tab.key
             const count = getCount(tab.key)
@@ -207,11 +249,10 @@ async function handleReject(app: Application) {
               </Pressable>
             )
           })}
-
         </View>
       </View>
 
-      {/* ───────── LIST ───────── */}
+      {/* List */}
       <FlatList
         data={filtered}
         keyExtractor={item => item.id}
@@ -225,15 +266,23 @@ async function handleReject(app: Application) {
           <View className="gap-2">
 
             <ApplicantCard
-              name={item.applicant?.full_name ?? 'Candidate'}
-              avatarUri={item.applicant?.avatar_url ?? undefined}
-              headline={(item.applicant as any)?.job_seeker?.headline ?? undefined}
-              location={(item.applicant as any)?.job_seeker?.location ?? undefined}
+              name={item.profile?.full_name ?? 'Candidate'}
+              avatarUri={item.profile?.avatar_url ?? undefined}
+              headline={item.jobSeeker?.headline ?? undefined}
+              location={item.jobSeeker?.location ?? undefined}
               appliedAt={new Date(item.applied_at).toLocaleDateString()}
               status={item.status}
+              skills={item.skills ?? []}
+              experiences={
+                item.resume?.experiences?.map(exp => ({
+                  title: exp.role,
+                  company: exp.company_name,
+                })) ?? []
+              }              
+              education={item.resume?.education ?? []}
 
               onView={() => {
-                console.log('View profile:', item.applicant?.id)
+                console.log('View profile:', item.user_id)
               }}
 
               onShortlist={
