@@ -156,6 +156,8 @@ export type Application = {
   cover_letter: string | null
   applied_at:   string
   updated_at:   string
+  chat_started: boolean   // ✅ NEW
+
   // joined
   job?:         JobListing
   applicant?:   Profile & { job_seeker?: JobSeeker }
@@ -196,7 +198,7 @@ export type Interview = {
 
 export type Message = {
   id:         string
-  room_id:    string
+  application_id:    string
   sender_id:  string | null
   content:    string
   created_at: string
@@ -289,4 +291,22 @@ export function normalizeCreateJobListing(
 
     status: data.status ?? 'open',
   }
+}
+
+
+
+
+// ── Chats ─────────────────────────────────────────────────────────────────────
+
+export type ChatItem = {
+  id:            string
+  title:         string
+  lastMessage:   string | undefined
+  lastMessageAt: string | undefined
+  avatar:        string | null | undefined
+}
+
+export type MyChatsResult = {
+  active:   ChatItem[]
+  inactive: ChatItem[]
 }

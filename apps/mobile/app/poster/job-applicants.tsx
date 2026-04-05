@@ -175,7 +175,7 @@ export default function JobApplicantsScreen() {
 
     if (interview) {
       router.push({
-        pathname: '/shared/interview-lobby',
+        pathname: '/poster/interview',
         params: { roomName: interview.room_name },
       })
     }

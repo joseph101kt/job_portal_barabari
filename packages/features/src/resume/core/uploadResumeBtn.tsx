@@ -4,14 +4,10 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { View, ActivityIndicator, Text, Alert } from 'react-native'
-import {
-  useDocumentExtractor,
-  useDocument,
-  PdfEngine,
-  useAnalyzeDocument,
-} from '@my-app/features'
-import { upsertResume } from '@my-app/supabase'
 import { Button, colors, Toast } from '../../../../ui/src'
+import { PdfEngine, useDocument, useDocumentExtractor } from '../../ocr'
+import { useAnalyzeDocument } from '../../ai'
+import { upsertResume } from '@my-app/supabase'
 
 
 // ── TYPES ──────────────────────────────────────────────────

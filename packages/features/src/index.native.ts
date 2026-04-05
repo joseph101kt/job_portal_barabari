@@ -1,3 +1,5 @@
+// packages/features/src/index.native.ts
+
 export { useCounter } from './hooks/useCounter';
 export { useRoom, requestCallPermissions } from './livekit/native';
 export { useRoomWeb } from './livekit/web';
@@ -8,3 +10,5 @@ export * from './ocr';
 export * from './ai'
 
 export { ResumeUploadButton } from './resume';
+
+export { ChatPage } from './chat';

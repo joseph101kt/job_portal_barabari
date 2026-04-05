@@ -51,6 +51,8 @@ export {
 } from './queries/messages'
 
 
+export * from './queries/chat'
+
 export * from './queries/resume'
 
 // ── Types ─────────────────────────────────────────────────────────────────────

@@ -8,3 +8,6 @@ export * from './ocr';
 export * from './ai'
 
 export { ResumeUploadButton } from './resume';
+
+
+export { ChatPage } from './chat';
