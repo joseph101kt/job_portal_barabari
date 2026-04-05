@@ -34,6 +34,8 @@ type Props = {
     institution?: string
   }[]
 
+  onStartChat?: () => void // ✅ NEW
+
   onView?: () => void
   onShortlist?: () => void
   onReject?: () => void
@@ -59,6 +61,7 @@ export function ApplicantCard({
   experiences,
   education,
   onView,
+  onStartChat,
   onShortlist,
   onReject,
   onHire,
@@ -234,6 +237,17 @@ export function ApplicantCard({
               onPress={onHire}
             />
           )}
+        </View>
+      )}
+      {/* START CHAT */}
+      {onStartChat && (
+        <View className="px-4 pb-3">
+          <Button
+            label="Open Chat"
+            variant="primary"
+            size="sm"
+            onPress={onStartChat}
+          />
         </View>
       )}
     </Card>

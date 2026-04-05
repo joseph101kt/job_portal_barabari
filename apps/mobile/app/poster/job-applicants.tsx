@@ -17,6 +17,8 @@ import {
   getFullResume,
   type Application,
   type ApplicationStatus,
+  startChat,
+  supabase,
 } from '@my-app/supabase'
 
 const TABS: { key: ApplicationStatus | 'all'; label: string }[] = [
@@ -124,6 +126,32 @@ export default function JobApplicantsScreen() {
     await load()
     setRefreshing(false)
   }
+
+  async function handleStartChat(app: EnrichedApplication) {
+  try {
+    const { data: { user } } = await getSupabase().auth.getUser()
+    if (!user) return
+
+    // ✅ this creates/activates chat
+    await startChat(app.id, 'poster')
+
+    const { error } = await supabase.from('messages').insert({
+      application_id: app.id,
+      sender_id: user.id,
+      content: "Hi",
+    })
+
+    if (error) {
+      console.error('❌ send message error:', error)
+    }
+      router.push('/poster/chat');
+
+
+  } catch (err) {
+    console.error('❌ start chat error:', err)
+    Toast.showError('Failed to start chat')
+  }
+}
 
   // ───────── STATUS ACTIONS ─────────
 
@@ -280,7 +308,7 @@ export default function JobApplicantsScreen() {
                 })) ?? []
               }              
               education={item.resume?.education ?? []}
-
+              onStartChat={() => handleStartChat(item)} 
               onView={() => {
                 console.log('View profile:', item.user_id)
               }}
