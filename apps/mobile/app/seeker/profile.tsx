@@ -10,8 +10,8 @@ import {
   type Profile, type JobSeeker,
   getFullResume, upsertResume
 } from '@my-app/supabase'
+import { ResumeUploadButton } from '@my-app/features'
 
-import { ResumeUploadButton } from '../uploadResumeBtn'
 
 // ───────────────── HELPERS ─────────────────
 

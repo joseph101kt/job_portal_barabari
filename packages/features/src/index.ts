@@ -6,3 +6,5 @@ export * from './livekit/ui';
 export * from './ocr';
 
 export * from './ai'
+
+export { ResumeUploadButton } from './resume';

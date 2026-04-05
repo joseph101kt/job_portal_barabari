@@ -11,7 +11,8 @@ import {
   useAnalyzeDocument,
 } from '@my-app/features'
 import { upsertResume } from '@my-app/supabase'
-import { Button, colors, Toast } from '@my-app/ui'
+import { Button, colors, Toast } from '../../../../ui/src'
+
 
 // ── TYPES ──────────────────────────────────────────────────
 
