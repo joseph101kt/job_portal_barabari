@@ -31,7 +31,7 @@ function formatDate(date?: string) {
 
 // ───────────────── PROFILE VIEW ─────────────────
 
-function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh }: any) {
+function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSignOut  }: any) {
   return (
     <>
       <ProfileHeader
@@ -156,6 +156,13 @@ function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh }: any
           <ThemeToggle variant="row" />
         </View>
 
+      </View>
+      <View className="mt-6">
+        <Button
+          className='bg-red-500 border-red-300'
+          label="Sign Out"
+          onPress={onSignOut}
+        />
       </View>
     </>
   )
@@ -359,20 +366,31 @@ async function handleSave(data: any) {
   }
 }
 
+async function handleSignOut() {
+  try {
+    await getSupabase().auth.signOut()
+    Toast.showSuccess('Signed out')
+  } catch (err) {
+    console.error(err)
+    Toast.showError('Failed to sign out')
+  }
+}
+
   if (loading) return <PageLayout><View /></PageLayout>
 
   return (
     <PageLayout header={{ title: 'Profile' }}>
       {mode === 'profile' ? (
         <ScrollView>
-          <ProfileView
-            profile={profile}
-            seeker={seeker}
-            resume={resume}
-            userId={profile?.id}
-            onEdit={() => setMode('edit')}
-            onRefresh={load}
-          />
+        <ProfileView
+          profile={profile}
+          seeker={seeker}
+          resume={resume}
+          userId={profile?.id}
+          onEdit={() => setMode('edit')}
+          onRefresh={load}
+          onSignOut={handleSignOut}   // 👈 add this
+        />
         </ScrollView>
       ) : (
         <ProfileEdit

@@ -13,7 +13,7 @@ import {
 
 // ───────────────── PROFILE VIEW ─────────────────
 
-function PosterProfileView({ profile, poster, onEdit }: any) {
+function PosterProfileView({ profile, poster, onEdit, onSignOut }: any) {
   return (
     <>
       <ProfileHeader
@@ -48,6 +48,14 @@ function PosterProfileView({ profile, poster, onEdit }: any) {
         <View className="gap-3">
           <SectionHeader title="Appearance" />
           <ThemeToggle variant="row" />
+        </View>
+
+        <View className="mt-6">
+          <Button
+            className='bg-red-500 border-red-300'
+            label="Sign Out"
+            onPress={onSignOut}
+          />
         </View>
 
       </View>
@@ -105,6 +113,16 @@ export default function PosterProfileScreen() {
   const [mode, setMode] = useState<'profile' | 'edit'>('profile')
 
   useEffect(() => { load() }, [])
+
+  async function handleSignOut() {
+  try {
+    await getSupabase().auth.signOut()
+    Toast.showSuccess('Signed out')
+  } catch (err) {
+    console.error(err)
+    Toast.showError('Failed to sign out')
+  }
+}
 
   async function load() {
     try {
@@ -178,11 +196,12 @@ export default function PosterProfileScreen() {
 
       {mode === 'profile' && (
         <ScrollView>
-          <PosterProfileView
-            profile={profile}
-            poster={poster}
-            onEdit={() => setMode('edit')}
-          />
+<PosterProfileView
+  profile={profile}
+  poster={poster}
+  onEdit={() => setMode('edit')}
+  onSignOut={handleSignOut}   // 👈 add this
+/>
         </ScrollView>
       )}
 

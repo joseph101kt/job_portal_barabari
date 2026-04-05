@@ -4,7 +4,6 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { View, ActivityIndicator, Text, Alert } from 'react-native'
-import { Button, colors, Toast } from '@my-app/ui'
 import {
   useDocumentExtractor,
   useDocument,
@@ -12,6 +11,7 @@ import {
   useAnalyzeDocument,
 } from '@my-app/features'
 import { upsertResume } from '@my-app/supabase'
+import { Button, colors, Toast } from '@my-app/ui'
 
 // ── TYPES ──────────────────────────────────────────────────
 
