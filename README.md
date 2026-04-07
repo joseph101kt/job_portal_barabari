@@ -1,34 +1,146 @@
-TODO LIST:
+# 🚀 Job Portal + Interview Platform
 
-PHASE 1 — Foundation (do today)
-  1.1  Create new Supabase project for job portal
-  1.2  Run job_portal_001.sql schema
-  
-  1.3  Test auth signup → auto profile creation trigger works
-  1.4  Create new Edge Function (resume analyzer only, no medical)
-  1.5  Test resume analysis end to end via PowerShell
+A full-stack job portal with real-time chat, video interviews, and AI-powered resume analysis.
 
-PHASE 2 — Core features (next session)
-  2.1  Auth screens (signup with role picker, login)
-  2.2  Candidate: resume upload screen → OCR/DOCX extract → AI analyze → save to attributes
-  2.3  Interviewer: candidate list screen (reads profiles + attributes)
-  2.4  Interview scheduling (create interviews row, generate LiveKit room name)
-  2.5  LiveKit call screen (join by room_name from interviews table)
-  2.6  Post-call: interviewer fills feedback + rating + decision
+---
 
-PHASE 3 — Next.js (timebox 3 hours)
-  3.1  Create apps/web/ with Next.js
-  3.2  Wire same Supabase client (different env vars)
-  3.3  Web-only pages: landing, candidate dashboard, interviewer dashboard
-  3.4  Reuse packages/features for AI + document logic
-  3.5  If it breaks badly after 2hrs → ship mobile only, move on
+## ✨ Features
 
-PHASE 4 — Polish + Electron (if time allows)
-  4.1  Electron: copy apps/web/, add electron wrapper, client-only build
-  4.2  No SSR pages needed — Electron is always client-side
-  4.3  Try supabase O-AUTH
+### 👨‍💼 Job Seeker
+- Browse jobs
+- Apply to jobs
+- Track applications
+- Chat with recruiters
+- Join video interviews
+- Upload resume → OCR → AI analysis
 
-PHASE 5 — Submit
-  5.1  Clean up, README, demo recording
-  5.2  Git tag v1.0
-  5.3  Clone → strip → template branch
+### 🏢 Job Poster
+- Create job listings
+- View applicants
+- Start chat with candidates
+- Schedule & conduct interviews
+
+### 💬 Communication
+- Real-time chat (Supabase Realtime)
+- One conversation per application
+
+### 🎥 Interviews
+- LiveKit-powered video calls
+- Interview lobby + status tracking
+
+### 🤖 AI Resume
+- OCR pipeline (PDF, image, docx)
+- Gemini API integration
+- Auto-fill profile data
+
+---
+
+## 🏗️ Architecture
+
+- Monorepo setup
+- apps/mobile → main app (Expo web)
+- packages/supabase → DB queries + types
+- packages/features → OCR, AI, LiveKit logic
+- packages/ui → design system
+
+---
+
+## 🔑 Core Concept
+
+Everything is tied to:
+
+applicationId
+
+Used for:
+- Chat → room_id = app_${applicationId}
+- Interview → room_name = app_${applicationId}
+
+---
+
+## 🔐 Auth & Routing
+
+- Centralized in _layout.tsx
+- Handles:
+  - auth
+  - onboarding
+  - role-based routing
+
+---
+
+## ⚙️ Tech Stack
+
+- React Native (Expo + Web)
+- Supabase (Auth, DB, Realtime)
+- LiveKit (video)
+- Gemini API (AI)
+- Tailwind / NativeWind
+
+---
+
+## 🧾 Development Rules
+
+- No Alert.alert
+- Always use Toasts
+- Always validate before API
+- Always log during development
+- Handle all edge cases
+
+---
+
+## 🧪 Run Locally
+
+pnpm install  
+pnpm dev  
+
+---
+
+## 🔐 Environment Variables
+
+EXPO_PUBLIC_SUPABASE_URL=  
+EXPO_PUBLIC_SUPABASE_ANON_KEY=  
+LIVEKIT_API_KEY=  
+LIVEKIT_API_SECRET=  
+
+---
+
+## 🧪 Core Flow
+
+- Signup → onboarding  
+- Poster creates job  
+- Seeker applies  
+- Poster views applicants  
+- Chat starts  
+- Interview starts  
+- Video call  
+- End interview  
+
+---
+
+## 📦 Status
+
+### Completed
+- Jobs + applications
+- Chat system
+- Interview system
+- OCR + AI pipeline
+- Realtime updates
+
+### In Progress
+- Full flow testing
+- Metadata + production setup
+
+### Planned
+- Loading skeletons
+- UI system cleanup
+- Design polish
+
+---
+
+## 💥 Note
+
+This project combines:
+- realtime systems
+- video communication
+- AI processing
+
+→ making it a strong full-stack system foundation
