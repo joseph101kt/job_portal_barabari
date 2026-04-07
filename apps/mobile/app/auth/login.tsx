@@ -104,26 +104,11 @@ export default function LoginScreen() {
 
     setLoading(false)
 
-    // 👉 (optional next step)
-    // router.replace('/home')
+
+    router.replace('/onboarding/role')
   }
 
-  // ─────────────────────────────────────────────
-  // GOOGLE LOGIN
-  // ─────────────────────────────────────────────
-  async function handleGoogleLogin() {
-    logEvent('Auth', 'Google login started')
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'myapp://auth/callback' },
-    })
-
-    if (error) {
-      logEvent('Auth', `Google login error: ${error.message}`)
-      Toast.showError('Please try again.', 'Google login failed')
-    }
-  }
 
   // ─────────────────────────────────────────────
   // UI
@@ -175,13 +160,6 @@ export default function LoginScreen() {
           <View className="flex-1 h-px bg-gray-200" />
         </View>
 
-        {/* Google Login */}
-        <Button
-          label="Continue with Google"
-          variant="outline"
-          onPress={handleGoogleLogin}
-          fullWidth
-        />
 
         {/* Signup Redirect */}
         <Pressable

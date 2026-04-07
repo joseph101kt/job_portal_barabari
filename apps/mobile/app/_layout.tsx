@@ -1,14 +1,4 @@
 // apps/mobile/app/_layout.tsx
-//
-// THE single auth gatekeeper. Every navigation decision lives here.
-// No screen does its own auth check — they all trust this layout.
-//
-// Decision tree:
-//   no session          → /auth/login
-//   session, no role    → /onboarding/role      (OAuth users)
-//   session, not onboarded → /onboarding/<role>
-//   job_seeker          → /seeker/jobs
-//   job_poster          → /poster/dashboard
 
 import '../global.css'
 import { Stack, useRouter, useSegments } from 'expo-router'
@@ -19,14 +9,14 @@ import { configureAI } from '@my-app/features'
 import type { Session } from '@supabase/supabase-js'
 import { ThemeProvider, ToastProvider } from '@my-app/ui'
 
-// ── One-time app init ──────────────────────────────────────────────────────
+// init
 initSupabase(
   process.env.EXPO_PUBLIC_SUPABASE_URL!,
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
 )
 
 configureAI({
-  url:     process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  url: process.env.EXPO_PUBLIC_SUPABASE_URL!,
   anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
 })
 
@@ -35,162 +25,140 @@ if (Platform.OS !== 'web') {
   registerGlobals()
 }
 
-// ── Auth state ─────────────────────────────────────────────────────────────
-type AuthState = 'loading' | 'unauthenticated' | 'onboarding_role' | 'onboarding_details' | 'seeker' | 'poster'
-
-function deriveState(session: Session | null, profile: Profile | null): AuthState {
-  if (!session)                         return 'unauthenticated'
-  if (!profile || !profile.role)        return 'onboarding_role'
-  if (!profile.onboarded)               return 'onboarding_details'
-  if (profile.role === 'job_seeker')    return 'seeker'
-  if (profile.role === 'job_poster')    return 'poster'
-  return 'unauthenticated'
-}
+type AuthState =
+  | 'loading'
+  | 'unauthenticated'
+  | 'onboarding_role'
+  | 'onboarding_details'
+  | 'seeker'
+  | 'poster'
 
 export default function RootLayout() {
-  const router   = useRouter()
+  const router = useRouter()
   const segments = useSegments()
+
   const [authState, setAuthState] = useState<AuthState>('loading')
-  const initialized = useRef(false)
+  const [profile, setProfile] = useState<Profile | null>(null)
 
   useEffect(() => {
     const supabase = getSupabase()
 
-async function handleSession(session: Session | null) {
-  if (!session) {
-    console.log('[Auth] no session')
-    setAuthState('unauthenticated')
-    return
-  }
+    async function handleSession(session: Session | null) {
+      if (!session) {
+        setAuthState('unauthenticated')
+        return
+      }
 
-  const { data: profile, error } = await getSupabase()
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .maybeSingle()
+      // 🔥 ONLY DB CALL (needed)
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle()
 
-  if (error) {
-    console.error('[DB] profile error:', error.message)
-  }
-  if (!profile) {
-    console.log('[Auth] profile not ready yet')
-    setAuthState('onboarding_role')
-    return
-  }
+      if (error) {
+        console.error('[DB error]', error.message)
+      }
 
-  const state = deriveState(session, profile as Profile | null)
+      setProfile(data ?? null)
 
-  console.log('[Auth] derived state:', state)
+      if (!data || !data.role) {
+        setAuthState('onboarding_role')
+        return
+      }
 
-  setAuthState(state)
-}
+      if (!data.onboarded) {
+        setAuthState('onboarding_details')
+        return
+      }
 
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[Auth] initial session:', session ? `uid=${session.user.id}` : 'none')
-      handleSession(session)
+      if (data.role === 'job_seeker') {
+        setAuthState('seeker')
+        return
+      }
+
+      if (data.role === 'job_poster') {
+        setAuthState('poster')
+        return
+      }
+    }
+
+    // initial
+    supabase.auth.getSession().then(({ data }) => {
+      handleSession(data.session)
     })
 
-    // Listen for auth changes (login, logout, OAuth callback)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] state change:', event, session ? `uid=${session.user.id}` : 'none')
-      handleSession(session)
-    })
+    // listener (CRITICAL)
+    const { data: { subscription } } =
+      supabase.auth.onAuthStateChange((_event, session) => {
+        handleSession(session)
+      })
 
     return () => subscription.unsubscribe()
   }, [])
 
-
-
-  // Route based on auth state
+  // 🚀 ROUTING (NO ASYNC HERE)
   useEffect(() => {
     if (authState === 'loading') return
 
-    const inAuth        = segments[0] === 'auth'
-    const inOnboarding  = segments[0] === 'onboarding'
-    const inSeeker      = segments[0] === 'seeker'
-    const inPoster      = segments[0] === 'poster'
+    const inAuth = segments[0] === 'auth'
+    const inOnboarding = segments[0] === 'onboarding'
+    const inSeeker = segments[0] === 'seeker'
+    const inPoster = segments[0] === 'poster'
 
     switch (authState) {
       case 'unauthenticated':
-        if (!inAuth) {
-          console.log('[Nav] → /auth/login')
-          router.replace('/auth/login')
-        }
+        if (!inAuth) router.replace('/auth/login')
         break
 
       case 'onboarding_role':
-        if (!inOnboarding) {
-          console.log('[Nav] → /onboarding/role')
-          router.replace('/onboarding/role')
-        }
+        if (!inOnboarding) router.replace('/onboarding/role')
         break
 
       case 'onboarding_details':
         if (!inOnboarding) {
-          // We need the role to route to the right onboarding screen
-          // Role is stored in the profile — re-fetch or check segments
-          getSupabase().auth.getUser().then(({ data: { user } }) => {
-            if (!user) return
-            getSupabase().from('profiles').select('role').eq('id', user.id).single()
-              .then(({ data }) => {
-                const path = data?.role === 'job_poster'
-                  ? '/onboarding/job-poster'
-                  : '/onboarding/job-seeker'
-                console.log('[Nav] →', path)
-                router.replace(path as any)
-              })
-          })
+          const path =
+            profile?.role === 'job_poster'
+              ? '/onboarding/job-poster'
+              : '/onboarding/job-seeker'
+
+          router.replace(path as any)
         }
         break
 
       case 'seeker':
-        if (!inSeeker) {
-          console.log('[Nav] → /seeker/jobs')
-          router.replace('/seeker/jobs')
-        }
+        if (!inSeeker) router.replace('/seeker/jobs')
         break
 
       case 'poster':
-        if (!inPoster) {
-          console.log('[Nav] → /poster/dashboard')
-          router.replace('/poster/dashboard')
-        }
+        if (!inPoster) router.replace('/poster/dashboard')
         break
     }
-  }, [authState, segments])
+  }, [authState])
 
   if (authState === 'loading') {
     return (
-      <View className="flex-1 items-center justify-center bg-neutral-50 dark:bg-neutral-900">
-        <ActivityIndicator size="large" color="#4F6EF7" />
-        <Text className="text-xs text-neutral-400 dark:text-neutral-500 mt-3">Loading...</Text>
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator />
+        <Text className="mt-3 text-gray-500">Loading...</Text>
       </View>
     )
   }
-  console.log('Supabase instance:', getSupabase())
 
   return (
     <ThemeProvider>
       <ToastProvider>
-
         <Stack screenOptions={{ headerShown: false }}>
-          {/* Auth group */}
-          <Stack.Screen name="auth/login"   />
-          <Stack.Screen name="auth/signup"  />
+          <Stack.Screen name="auth/login" />
+          <Stack.Screen name="auth/signup" />
 
-          {/* Onboarding group */}
-          <Stack.Screen name="onboarding/role"       />
+          <Stack.Screen name="onboarding/role" />
           <Stack.Screen name="onboarding/job-seeker" />
           <Stack.Screen name="onboarding/job-poster" />
 
-          {/* Main app groups — tab navigators live inside these */}
           <Stack.Screen name="seeker" options={{ animation: 'none' }} />
           <Stack.Screen name="poster" options={{ animation: 'none' }} />
-
         </Stack>
-      
-      
       </ToastProvider>
     </ThemeProvider>
   )

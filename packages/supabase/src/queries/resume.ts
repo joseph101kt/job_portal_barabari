@@ -166,21 +166,103 @@ async function resolveSkills(
 // MAIN UPSERT FLOW
 // ─────────────────────────────────────────────
 
+
 export async function upsertResume(userId: string, rawData: any): Promise<boolean> {
   const supabase = getSupabase()
 
-  try {
-    const data = rawData
+  console.log('[UPSERT START]', { userId })
+  console.log('[UPSERT RAW DATA]', rawData)
 
-    // ── 1. ALWAYS DELETE (CRITICAL FIX) ──
+  try {
+    // ✅ normalize AI output
+    const data = normalizeResumeData(rawData as any) as any
+
+    console.log('[UPSERT NORMALIZED]', data)
+    console.log('[UPSERT KEYS]', Object.keys(data))
+    console.log('[RAW AI DATA]', JSON.stringify(rawData, null, 2))
+
+    // ── ✅ EXTRACT CORE FIELDS ──
+    const extractedName =
+      data.candidate?.name ||
+      data.name ||
+      null
+
+    const extractedHeadline =
+      data.headline ||
+      data.title ||
+      data.role ||
+      data.experience?.[0]?.role ||
+      null
+
+    const extractedLocation =
+      data.candidate?.location || null
+
+    console.log('[FINAL NAME]', extractedName)
+    console.log('[FINAL HEADLINE]', extractedHeadline)
+    console.log('[FINAL LOCATION]', extractedLocation)
+
+    // ── 0. ENSURE job_seekers row exists ──
+    const { error: seekerError } = await supabase
+      .from('job_seekers')
+      .upsert(
+        {
+          id: userId,
+          created_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      )
+
+    if (seekerError) {
+      console.error('[DB] upsertResume: failed to ensure job_seekers row', seekerError.message)
+      return false
+    }
+
+    // ── 0.5 ✅ UPDATE job_seekers ──
+    const { error: updateError } = await supabase
+      .from('job_seekers')
+      .update({
+        headline: extractedHeadline,
+        location: extractedLocation,
+        ai_summary: data.bio ?? null,
+      })
+      .eq('id', userId)
+
+    if (updateError) {
+      console.error('[DB] failed to update job_seekers fields', updateError.message)
+    } else {
+      console.log('[DB] job_seekers updated')
+    }
+
+    // ── 🔥 0.6 ✅ UPDATE NAME IN PROFILES (THIS WAS MISSING) ──
+    if (extractedName) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: extractedName,
+        })
+        .eq('id', userId)
+        .is('full_name', null) // ✅ only fill if empty (safe)
+
+      if (profileError) {
+        console.error('[DB] failed to update profile name', profileError.message)
+      } else {
+        console.log('[DB] profile name updated')
+      }
+    } else {
+      console.log('[DB] no name extracted from resume')
+    }
+
+    // ── 1. CLEAR OLD DATA ──
     await supabase.from('experiences').delete().eq('user_id', userId)
     await supabase.from('education').delete().eq('user_id', userId)
 
     console.log('[DB] cleared experiences + education')
 
     // ── 2. EXPERIENCES ──
-    if (data.experiences?.length) {
-      const payload = data.experiences.map((e: any) => ({
+    console.log('[DB EXPERIENCE INPUT]', data.experience)
+
+    if (data.experience?.length) {
+      const payload = data.experience.map((e: any) => ({
         user_id: userId,
         company_name: e.company_name ?? e.company ?? '',
         role: e.role ?? '',
@@ -196,6 +278,8 @@ export async function upsertResume(userId: string, rawData: any): Promise<boolea
     }
 
     // ── 3. EDUCATION ──
+    console.log('[DB EDUCATION INPUT]', data.education)
+
     if (data.education?.length) {
       const payload = data.education.map((e: any) => ({
         user_id: userId,
@@ -219,6 +303,8 @@ export async function upsertResume(userId: string, rawData: any): Promise<boolea
     return false
   }
 }
+
+
 
 // ─────────────────────────────────────────────
 // RETRIEVAL QUERIES

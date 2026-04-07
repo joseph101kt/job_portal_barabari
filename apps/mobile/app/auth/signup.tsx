@@ -99,7 +99,7 @@ export default function SignupScreen() {
     Toast.showSuccess('Account created successfully', 'Welcome!')
 
     // 🚀 Navigate to app
-    router.replace('/')
+    router.replace('/onboarding/role')
 
     setLoading(false)
   }

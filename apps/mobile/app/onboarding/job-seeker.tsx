@@ -1,3 +1,4 @@
+
 // apps/mobile/app/onboarding/job-seeker.tsx
 
 import { Stack, useRouter } from 'expo-router'
@@ -56,15 +57,11 @@ export default function JobSeekerOnboarding() {
         .eq('id', user.id)
         .single()
 
-      const { data: seeker, error: seekerError } = await supabase
+      const { data: seeker } = await supabase
         .from('job_seekers')
         .select('headline, location, availability, resume_url, ai_summary')
         .eq('id', user.id)
-        .single()
-
-      if (seekerError && seekerError.code !== 'PGRST116') {
-        console.error(seekerError)
-      }
+        .maybeSingle()
 
       setFullName(profile?.full_name ?? '')
       setHeadline(seeker?.headline ?? '')
@@ -72,8 +69,10 @@ export default function JobSeekerOnboarding() {
       setAvailability(seeker?.availability ?? null)
       setResumeUrl(seeker?.resume_url ?? null)
 
-      // unlock fields only once ai_summary is populated
-      if (seeker?.ai_summary) {
+      console.log('[UI LOAD PROFILE seeker]', seeker)
+
+      // ✅ FIX: unlock UI if ANY resume data exists (not just ai_summary)
+      if (seeker?.headline || seeker?.location || seeker?.ai_summary) {
         setIsProcessingResume(false)
         setHasProcessedResume(true)
       }
@@ -89,56 +88,75 @@ export default function JobSeekerOnboarding() {
     loadProfile()
   }, [])
 
-  async function handleSave() {
+  type JobSeekerPayload = {
+    id: string
+    headline: string | null
+    location: string | null
+    availability: string
+    resume_url: string | null
+  }
+
+  async function handleSave(): Promise<void> {
     try {
-      if (!fullName.trim()) {
-        Toast.showError('Please enter your name')
-        return
-      }
-      if (!headline.trim()) {
-        Toast.showError('Please enter your role / headline')
-        return
-      }
-      if (!availability) {
-        Toast.showError('Please select your availability')
-        return
-      }
+      if (!fullName.trim()) throw new Error('NAME_REQUIRED')
+      if (!headline.trim()) throw new Error('HEADLINE_REQUIRED')
+      if (!availability) throw new Error('AVAILABILITY_REQUIRED')
 
       setLoading(true)
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const { data, error: userError } = await supabase.auth.getUser()
+      if (userError || !data.user) throw new Error('AUTH_EXPIRED')
 
-      if (!user) {
-        Toast.showError('Session expired. Please login again.')
-        router.replace('/auth/login')
-        return
-      }
+      const user = data.user
 
-      const { error: profileError } = await supabase
+      const profileUpdate = supabase
         .from('profiles')
-        .update({ full_name: fullName.trim(), onboarded: true })
+        .update({
+          full_name: fullName.trim(),
+          onboarded: true,
+        })
         .eq('id', user.id)
 
-      if (profileError) throw profileError
+      const seekerPayload: JobSeekerPayload = {
+        id: user.id,
+        headline: headline.trim() || null,
+        location: location.trim() || null,
+        availability,
+        resume_url: resumeUrl || null,
+      }
 
-      const { error: seekerError } = await supabase
+      const seekerUpsert = supabase
         .from('job_seekers')
-        .upsert({
-          id: user.id,
-          headline: headline.trim() || null,
-          location: location.trim() || null,
-          availability,
-          resume_url: resumeUrl || null,
-        })
+        .upsert(seekerPayload)
 
-      if (seekerError) throw seekerError
+      const [profileRes, seekerRes] = await Promise.all([
+        profileUpdate,
+        seekerUpsert,
+      ])
+
+      if (profileRes.error) throw profileRes.error
+      if (seekerRes.error) throw seekerRes.error
 
       Toast.showSuccess('Profile setup complete!')
-    } catch (err) {
+      router.replace('/seeker/jobs')
+    } catch (err: unknown) {
       console.error(err)
-      Toast.showError('Something went wrong')
+
+      if (err instanceof Error) {
+        switch (err.message) {
+          case 'NAME_REQUIRED':
+            return Toast.showError('Please enter your name')
+          case 'HEADLINE_REQUIRED':
+            return Toast.showError('Please enter your role')
+          case 'AVAILABILITY_REQUIRED':
+            return Toast.showError('Select availability')
+          case 'AUTH_EXPIRED':
+            router.replace('/auth/login')
+            return Toast.showError('Session expired')
+        }
+      }
+
+      Toast.showError('Unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -161,6 +179,7 @@ export default function JobSeekerOnboarding() {
       contentContainerClassName="px-6 py-12"
     >
       <Stack.Screen options={{ title: 'Onboarding' }} />
+
       <Text className="text-3xl font-bold text-gray-900 mb-2 dark:text-white">
         Set up your profile
       </Text>
@@ -175,34 +194,32 @@ export default function JobSeekerOnboarding() {
             userId={userId}
             hasResume={!!resumeUrl}
             showStatus
-            // ✅ file confirmed in picker → disable fields immediately
             onUploadStart={() => {
               setIsProcessingResume(true)
               setHasProcessedResume(false)
             }}
-            // ✅ picker dismissed without picking → unlock immediately
             onCancel={() => {
               setIsProcessingResume(false)
               setHasProcessedResume(false)
             }}
-            // ✅ extraction/AI/save failed → unlock + inform
             onError={() => {
               setIsProcessingResume(false)
-              setHasProcessedResume(false) // ✅ add this
+              setHasProcessedResume(false)
               Toast.showError('Upload failed. Please try again.')
             }}
-            // ✅ DB saved → poll for ai_summary, then reload fields
             onSuccess={async () => {
-              // isProcessingResume is already true from onUploadStart
-              Toast.showSuccess('Resume uploaded. Processing...')
+              Toast.showSuccess('Resume uploaded')
 
+              // ✅ IMMEDIATE UI UPDATE (critical fix)
+              await loadProfile()
+              setIsProcessingResume(false)
+              setHasProcessedResume(true)
+
+              // ✅ optional polling for AI summary only
               let attempts = 0
-              const maxAttempts = 8
-              let isActive = true
+              const maxAttempts = 6
 
               const interval = setInterval(async () => {
-                if (!isActive) return
-
                 attempts++
 
                 const { data: seeker } = await supabase
@@ -212,31 +229,10 @@ export default function JobSeekerOnboarding() {
                   .single()
 
                 if (seeker?.ai_summary || attempts >= maxAttempts) {
-                  isActive = false
                   clearInterval(interval)
                   await loadProfile()
-                  // loadProfile sets isProcessingResume(false) when ai_summary exists;
-                  // if we timed out without it, force-unlock here
-                  if (!seeker?.ai_summary) {
-                    setIsProcessingResume(false)
-                    setHasProcessedResume(false)
-                    Toast.showError('Processing timed out. Fill details manually.')
-                  }
-                  if (seeker?.ai_summary) {
-                    setIsProcessingResume(false)
-                    setHasProcessedResume(true)
-                  }
                 }
-              }, 1500)
-
-              // hard safety net — 15 s total
-              setTimeout(() => {
-                if (!isActive) return
-                isActive = false
-                clearInterval(interval)
-                setIsProcessingResume(false)
-                setHasProcessedResume(false)
-              }, 15000)
+              }, 2000)
             }}
           />
 
@@ -262,21 +258,18 @@ export default function JobSeekerOnboarding() {
         <View className="gap-4 mb-6">
           <Input
             label="Full name *"
-            placeholder="Jane Smith"
             value={fullName}
             onChangeText={setFullName}
             editable={!isProcessingResume}
           />
           <Input
             label="Headline *"
-            placeholder="Senior React Developer · Open to remote"
             value={headline}
             onChangeText={setHeadline}
             editable={!isProcessingResume}
           />
           <Input
             label="Location"
-            placeholder="San Francisco, CA"
             value={location}
             onChangeText={setLocation}
             editable={!isProcessingResume}
@@ -295,28 +288,22 @@ export default function JobSeekerOnboarding() {
               onPress={() => setAvailability(opt.value)}
               className={`flex-row items-center gap-3 p-4 rounded-xl border-2 ${
                 availability === opt.value
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
-                  : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-gray-300'
+                  : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
               }`}
             >
               <View
-                className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
+                className={`w-5 h-5 rounded-full border-2 items-center justify-center  dark:text-gray-300${
                   availability === opt.value
                     ? 'border-blue-600 bg-blue-600'
                     : 'border-gray-300 dark:border-gray-600'
                 }`}
               >
                 {availability === opt.value && (
-                  <View className="w-2 h-2 rounded-full bg-white" />
+                  <View className="w-2 h-2 rounded-full bg-white dark:text-gray-300" />
                 )}
               </View>
-              <Text
-                className={`text-sm font-medium ${
-                  availability === opt.value
-                    ? 'text-blue-700 dark:text-blue-300'
-                    : 'text-gray-700 dark:text-gray-300'
-                }`}
-              >
+              <Text className="text-sm font-medium dark:text-gray-300">
                 {opt.label}
               </Text>
             </Pressable>
@@ -329,7 +316,7 @@ export default function JobSeekerOnboarding() {
         variant="primary"
         onPress={handleSave}
         loading={loading}
-        disabled={isProcessingResume}
+        disabled={isProcessingResume && !hasProcessedResume} // ✅ FIX
         fullWidth
       />
 

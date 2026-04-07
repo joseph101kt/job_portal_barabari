@@ -21,7 +21,7 @@ export default function SeekerLayout() {
   )?.key ?? 'jobs'
 
   function handleTabChange(key: string) {
-    router.push(`/seeker/${key}` as any)
+    router.replace(`/seeker/${key}` as any)
   }
 
   return (

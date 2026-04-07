@@ -1,5 +1,11 @@
 {
   "android": {
     "package": "com.joseph_k.myapp"
-  }
+  },
+  "extra": {
+    "eas": {
+      "projectId": "81013813-fc49-47a9-a623-2f5260824532"
+    }
+  },
+  "owner": "joseph_k"
 }

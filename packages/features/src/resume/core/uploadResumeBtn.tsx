@@ -96,6 +96,8 @@ useEffect(() => {
     if (doc.status === 'success' && doc.result?.text && !hasAnalyzedRef.current) {
       hasAnalyzedRef.current = true
       handleAnalyze(doc.result.text)
+      console.log('[RESUME TEXT LENGTH]', doc.result.text.length)
+      console.log('[RESUME TEXT PREVIEW]', doc.result.text.slice(0, 500))
     }
 
     if (doc.status === 'error') {
@@ -115,6 +117,11 @@ useEffect(() => {
   // ─────────────────────────────────────────────
 
   async function handleAnalyze(text: string) {
+    console.log('[AI INPUT]', {
+      type: 'resume',
+      textLength: text.length,
+      preview: text.slice(0, 300),
+    })
     setStatusMessage('Analyzing with AI...')
     try {
       await ai.analyzeDocument({ type: 'resume', text })
@@ -131,6 +138,7 @@ useEffect(() => {
     if (ai.status === 'success' && ai.result?.data && !hasSavedRef.current) {
       hasSavedRef.current = true
       handleSave(ai.result.data)
+      console.log('[AI RAW RESULT]', ai.result.data)
     }
 
     if (ai.status === 'error') {
@@ -143,8 +151,13 @@ useEffect(() => {
   // ─────────────────────────────────────────────
 
   async function handleSave(rawResult: any) {
+    console.log('[SAVE INPUT RAW]', rawResult)
+
     setStatusMessage('Saving to profile...')
     const result = normalizeArrayFields(rawResult)
+    console.log('[SAVE NORMALIZED]', result)
+    console.log('[SAVE HEADLINE]', result.headline)
+    console.log('[SAVE LOCATION]', result.candidate?.location)
 
     try {
       const success = await upsertResume(userId, result)
