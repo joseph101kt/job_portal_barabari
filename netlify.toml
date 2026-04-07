@@ -1,6 +1,6 @@
 [build]
-  command = "yarn install && npx expo export --platform web"
-  publish = "dist"
+  command = "yarn install && npx expo export --platform web && cp public/_redirects dist/server/_redirects"
+  publish = "dist/server"
 
 [build.environment]
   NODE_VERSION = "20"
