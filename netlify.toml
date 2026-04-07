@@ -1,11 +1,6 @@
 [build]
   command = "yarn install && npx expo export --platform web"
-  publish = "dist/server"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
-
-[[redirects]]
-  from = "/_expo/*"
-  to = "/_expo/:splat"
-  status = 200
