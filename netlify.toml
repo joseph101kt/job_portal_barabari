@@ -4,3 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/_expo/*"
+  to = "/_expo/:splat"
+  status = 200
