@@ -12,7 +12,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('❌ getProfile error:', error)
@@ -52,7 +52,7 @@ export async function getJobSeeker(userId: string): Promise<JobSeeker | null> {
     .from('job_seekers')
     .select('*')
     .eq('id', userId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('❌ getJobSeeker error:', error)
@@ -100,7 +100,7 @@ export async function getJobPoster(userId: string): Promise<JobPoster | null> {
     .from('job_posters')
     .select('*')
     .eq('id', userId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('❌ getJobPoster error:', error)

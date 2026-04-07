@@ -1,6 +1,4 @@
-/**
- * app/uploadResumeBtn.tsx
- */
+// packages/features/src/components/uploadResumeBtn.tsx
 
 import React, { useState, useEffect, useRef } from 'react'
 import { View, ActivityIndicator, Text, Alert } from 'react-native'
@@ -9,87 +7,111 @@ import { PdfEngine, useDocument, useDocumentExtractor } from '../../ocr'
 import { useAnalyzeDocument } from '../../ai'
 import { upsertResume } from '@my-app/supabase'
 
-
-// ── TYPES ──────────────────────────────────────────────────
-
 type Props = {
-  userId:     string
+  userId: string
   hasResume?: boolean
+  onUploadStart?: () => void
   onSuccess?: (data: any) => void
-  onError?:   (err: any) => void
+  onCancel?: () => void
+  onError?: (err: any) => void
   showStatus?: boolean
 }
 
-// ── HELPERS ─────────────────────────────────────────────────
-
 function normalizeArrayFields(result: any): any {
-  console.log('[Resume] Raw AI result:', result)
-  const arrayFields = ['skills', 'experience', 'education', 'projects', 'certifications', 'strengths', 'gaps', 'suggestions']
+  const arrayFields = [
+    'skills','experience','education','projects',
+    'certifications','strengths','gaps','suggestions',
+  ]
   const out = { ...result }
   for (const field of arrayFields) {
     if (!Array.isArray(out[field])) {
-      console.warn('[Resume] AI returned non-array for', field, '— defaulting to []')
       out[field] = []
     }
   }
   return out
 }
 
-// ── COMPONENT ────────────────────────────────────────────────
-
 export function ResumeUploadButton({
   userId,
-  hasResume   = false,
+  hasResume = false,
+  onUploadStart,
   onSuccess,
+  onCancel,
   onError,
-  showStatus  = false,
+  showStatus = false,
 }: Props) {
-
   const doc = useDocument()
 
-  const { pickAndExtract, pdfWebviewRef, pendingDocRef } = useDocumentExtractor({
-    onEvent: (event) => {
-      doc.onDocumentEvent(event)
-    },
-  })
+  const { pickAndExtract, pdfWebviewRef, pendingDocRef } =
+    useDocumentExtractor({
+      onEvent: (event) => {
+        doc.onDocumentEvent(event)
+      },
+    })
 
   const ai = useAnalyzeDocument()
 
-  const [isProcessing,  setIsProcessing]  = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
 
-  // Prevent effect loops
   const hasAnalyzedRef = useRef(false)
-  const hasSavedRef    = useRef(false)
+  const hasSavedRef = useRef(false)
+  const hasNotifiedStartRef = useRef(false)
+
+  const statusRef = useRef(doc.status)
+
+  useEffect(() => {
+    statusRef.current = doc.status
+  }, [doc.status])
+
+  // ✅ Detect silent cancel (picker closed)
+useEffect(() => {
+  if (doc.status === 'picking') {
+    const timeout = setTimeout(() => {
+      if (statusRef.current === 'picking') {
+        console.log('[Resume] picker closed without selection')
+        resetAll()
+        onCancel?.()
+        setStatusMessage('')
+      }
+    }, 3000)
+
+    return () => clearTimeout(timeout)
+  }
+}, [doc.status])
 
   // ─────────────────────────────────────────────
-  // STEP 1: Extraction complete → trigger AI
+  // STEP 1: Watch doc status
   // ─────────────────────────────────────────────
 
   useEffect(() => {
+    // ✅ ONLY start processing when file is actually selected
+    if (doc.status === 'extracting' && !hasNotifiedStartRef.current) {
+      hasNotifiedStartRef.current = true
+      setIsProcessing(true)
+      setStatusMessage('Extracting text...')
+      onUploadStart?.()
+    }
+
     if (doc.status === 'success' && doc.result?.text && !hasAnalyzedRef.current) {
       hasAnalyzedRef.current = true
-      console.log('[Resume] extraction success, word count:', doc.result.text.split(/\s+/).length)
-      console.log('[Resume] extraction result:', doc.result.text)
       handleAnalyze(doc.result.text)
     }
 
-if (doc.status === 'error') {
-  if (doc.error === 'cancelled') {
-    console.log('[Resume] user cancelled picker')
-    resetAll()
-    return
-  }
+    if (doc.status === 'error') {
+      if (doc.error === 'cancelled') {
+        resetAll()
+        onCancel?.()
+        setStatusMessage('')
+        return
+      }
 
-  console.error('[Resume] extraction failed:', doc.error)
-  Alert.alert('Extraction failed', doc.error ?? 'Could not read file.')
-  resetAll()
-  onError?.(new Error(doc.error ?? 'extraction failed'))
-}
+      Alert.alert('Extraction failed', doc.error ?? 'Could not read file.')
+      resetAll()
+      onError?.(new Error(doc.error ?? 'extraction failed'))
+    }
   }, [doc.status])
 
-  // ─────────────────────────────────────────────
-  // STEP 2: Trigger AI analysis
   // ─────────────────────────────────────────────
 
   async function handleAnalyze(text: string) {
@@ -97,60 +119,41 @@ if (doc.status === 'error') {
     try {
       await ai.analyzeDocument({ type: 'resume', text })
     } catch (err) {
-      console.error('[Resume] AI call threw:', err)
-      Alert.alert('AI error', 'Failed to analyze resume. Please try again.')
+      Alert.alert('AI error', 'Failed to analyze resume.')
       resetAll()
       onError?.(err)
     }
   }
 
   // ─────────────────────────────────────────────
-  // STEP 3: AI complete → save to DB
-  // ─────────────────────────────────────────────
 
   useEffect(() => {
     if (ai.status === 'success' && ai.result?.data && !hasSavedRef.current) {
       hasSavedRef.current = true
-      console.log('[Resume] AI success, saving...')
-      console.log('[Resume] AI result:', ai.result.data)
       handleSave(ai.result.data)
     }
 
     if (ai.status === 'error') {
-      console.error('[Resume] AI error:', ai.error)
-      Alert.alert('Analysis failed', ai.error ?? 'AI could not parse the resume.')
+      Alert.alert('Analysis failed', ai.error ?? 'AI failed.')
       resetAll()
       onError?.(new Error(ai.error ?? 'AI failed'))
     }
   }, [ai.status])
 
   // ─────────────────────────────────────────────
-  // STEP 4: Save to database
-  // ─────────────────────────────────────────────
 
   async function handleSave(rawResult: any) {
     setStatusMessage('Saving to profile...')
-    // Normalize all array fields — guards against AI returning null/undefined
     const result = normalizeArrayFields(rawResult)
-    console.log('[Resume] saving result:', {
-      name:        result.candidate?.name,
-      skills:      result.skills?.length,
-      experience:  result.experience?.length,
-      education:   result.education?.length,
-    })
 
     try {
       const success = await upsertResume(userId, result)
+      if (!success) throw new Error()
 
-      if (!success) throw new Error('upsertResume returned false')
-
-      console.log('[Resume] save success')
       Alert.alert('Resume uploaded', 'Your profile has been updated.')
       onSuccess?.(result)
-
-    } catch (err: any) {
-      console.error('[Resume] save error:', err?.message ?? err)
-      Alert.alert('Save failed', 'Resume was analyzed but could not be saved. Please try again.')
+    } catch (err) {
+      Alert.alert('Save failed', 'Could not save resume.')
       onError?.(err)
     } finally {
       resetAll()
@@ -158,63 +161,46 @@ if (doc.status === 'error') {
   }
 
   // ─────────────────────────────────────────────
-  // RESET
-  // ─────────────────────────────────────────────
 
   function resetAll() {
     setIsProcessing(false)
     setStatusMessage('')
     hasAnalyzedRef.current = false
-    hasSavedRef.current    = false
+    hasSavedRef.current = false
+    hasNotifiedStartRef.current = false
     doc.reset()
     ai.reset()
-    setStatusMessage('')
-    setIsProcessing(false)
   }
 
-  // ─────────────────────────────────────────────
-  // STEP 0: Upload trigger
   // ─────────────────────────────────────────────
 
   async function handleUploadResume() {
     if (!userId) {
-      Alert.alert('Not logged in', 'Please log in to upload your resume.')
+      Alert.alert('Not logged in')
       return
     }
 
-    console.log('[Resume] upload triggered for user:', userId)
-
     resetAll()
-    setIsProcessing(true)
-    hasAnalyzedRef.current = false
-    hasSavedRef.current    = false
     setStatusMessage('Opening file picker...')
 
     try {
       await pickAndExtract()
     } catch (err: any) {
-      console.error('[Resume] pickAndExtract threw:', err?.message ?? err)
-      Toast.showError(
-        doc.error ?? 'Could not read file. Try a different PDF or DOCX.'
-      )
+      Toast.showError('Could not read file.')
       resetAll()
       onError?.(err)
     }
   }
 
   // ─────────────────────────────────────────────
-  // STATUS LABEL
-  // ─────────────────────────────────────────────
 
   function getStatusLabel(): string {
-    if (doc.status === 'picking')    return 'Opening picker...'
+    if (doc.status === 'picking') return 'Opening picker...'
     if (doc.status === 'extracting') return 'Extracting text...'
-    if (ai.status === 'loading')     return 'Analyzing resume...'
+    if (ai.status === 'loading') return 'Analyzing resume...'
     return statusMessage || 'Processing...'
   }
 
-  // ─────────────────────────────────────────────
-  // RENDER
   // ─────────────────────────────────────────────
 
   return (

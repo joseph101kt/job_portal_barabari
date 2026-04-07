@@ -110,7 +110,6 @@ async function handleSession(session: Session | null) {
     const inOnboarding  = segments[0] === 'onboarding'
     const inSeeker      = segments[0] === 'seeker'
     const inPoster      = segments[0] === 'poster'
-    const inShared      = segments[0] === 'shared'
 
     switch (authState) {
       case 'unauthenticated':
@@ -146,14 +145,14 @@ async function handleSession(session: Session | null) {
         break
 
       case 'seeker':
-        if (!inSeeker && !inShared) {
+        if (!inSeeker) {
           console.log('[Nav] → /seeker/jobs')
           router.replace('/seeker/jobs')
         }
         break
 
       case 'poster':
-        if (!inPoster && !inShared) {
+        if (!inPoster) {
           console.log('[Nav] → /poster/dashboard')
           router.replace('/poster/dashboard')
         }
@@ -189,9 +188,6 @@ async function handleSession(session: Session | null) {
           <Stack.Screen name="seeker" options={{ animation: 'none' }} />
           <Stack.Screen name="poster" options={{ animation: 'none' }} />
 
-          {/* Shared screens — stack on top of any tab context */}
-          <Stack.Screen name="shared/chat"             options={{ animation: 'slide_from_right' }} />
-          <Stack.Screen name="shared/interview-room"   options={{ animation: 'fade', gestureEnabled: false }} />
         </Stack>
       
       
