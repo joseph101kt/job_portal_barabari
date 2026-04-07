@@ -11,6 +11,7 @@ export {
   upsertJobSeeker,
   getJobPoster,
   upsertJobPoster,
+  syncUserSkills,
 } from './queries/profiles'
 
 export {

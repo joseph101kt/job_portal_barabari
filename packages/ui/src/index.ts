@@ -14,6 +14,7 @@ export { Chip }    from './components/atoms/Chip'
 export { Divider } from './components/atoms/Divider'
 export { Tag }     from './components/atoms/Tag'
 export { Toggle }  from './components/atoms/Toggle'
+export { DateInput } from './components/atoms/DateInput'
 
 // ── Molecules ─────────────────────────────────────────────────────────────────
 export { Card }              from './components/molecules/Card'

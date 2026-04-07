@@ -138,3 +138,51 @@ export async function upsertJobPoster(
   console.log('✅ upsertJobPoster success:', data)
   return data
 }
+
+export async function syncUserSkills(userId: string, skillNames: string[]) {
+  const supabase = getSupabase()
+
+  // 1. Get existing skills
+  const { data: existingSkills } = await supabase
+    .from('skills')
+    .select('*')
+    .in('name', skillNames)
+
+  const existingMap = new Map(existingSkills?.map(s => [s.name, s]))
+
+  // 2. Create missing skills
+  const newSkills = skillNames
+    .filter(name => !existingMap.has(name))
+    .map(name => ({
+      name,
+      slug: name.toLowerCase().replace(/\s+/g, '-'),
+    }))
+
+  let createdSkills: any[] = []
+  if (newSkills.length) {
+    const { data } = await supabase
+      .from('skills')
+      .insert(newSkills)
+      .select()
+
+    createdSkills = data || []
+  }
+
+  const allSkills = [...(existingSkills || []), ...createdSkills]
+
+  // 3. Clear old relations
+  await supabase
+    .from('job_seeker_skills')
+    .delete()
+    .eq('user_id', userId)
+
+  // 4. Insert new relations
+  await supabase
+    .from('job_seeker_skills')
+    .insert(
+      allSkills.map(s => ({
+        user_id: userId,
+        skill_id: s.id,
+      }))
+    )
+}

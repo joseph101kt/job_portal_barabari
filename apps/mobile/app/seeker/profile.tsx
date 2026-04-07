@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
 import {
   PageLayout, ProfileHeader, Card,
   SectionHeader, Divider, Button, Input,
-  Toast, ThemeToggle
+  Toast, ThemeToggle,
+  DateInput
 } from '@my-app/ui'
 import {
   getProfile, getSupabase,
   type Profile, type JobSeeker,
-  getFullResume, upsertResume
+  getFullResume, upsertResume,
+  upsertJobSeeker,
+  updateProfile,
+  syncUserSkills
 } from '@my-app/supabase'
 import { ResumeUploadButton } from '@my-app/features'
 
-
-// ───────────────── HELPERS ─────────────────
+// ───────────── HELPERS ─────────────
 
 function formatDate(date?: string) {
   if (!date) return ''
@@ -27,11 +30,9 @@ function formatDate(date?: string) {
   }
 }
 
+// ───────────── PROFILE VIEW ─────────────
 
-
-// ───────────────── PROFILE VIEW ─────────────────
-
-function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSignOut  }: any) {
+function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSignOut }: any) {
   return (
     <>
       <ProfileHeader
@@ -45,6 +46,7 @@ function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSig
 
       <Divider />
 
+      {/* Resume Upload */}
       <View className="px-5 pt-4">
         <ResumeUploadButton
           userId={userId}
@@ -56,25 +58,10 @@ function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSig
 
       <View className="px-5 py-6 gap-8">
 
-        {/* About */}
-        <View className="gap-3">
-          <SectionHeader title="About" action={{ label: 'Edit', onPress: onEdit }} />
-          {seeker?.bio ? (
-            <Text className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
-              {seeker.bio}
-            </Text>
-          ) : (
-            <Pressable onPress={onEdit}>
-              <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
-                + Add bio
-              </Text>
-            </Pressable>
-          )}
-        </View>
-
         {/* Skills */}
         <View className="gap-3">
           <SectionHeader title="Skills" />
+
           {resume?.skills?.length ? (
             <View className="flex-row flex-wrap gap-2">
               {resume.skills.map((s: any) => (
@@ -91,75 +78,78 @@ function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSig
               ))}
             </View>
           ) : (
-            <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
-              + Add skills
-            </Text>
+            <Text className="text-neutral-500">+ Add skills</Text>
           )}
         </View>
 
         {/* Experience */}
         <View className="gap-3">
           <SectionHeader title="Experience" />
+
           {resume?.experiences?.length ? (
             resume.experiences.map((exp: any) => (
-              <Card key={exp.id} className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-                <Text className="text-base font-semibold text-neutral-900 dark:text-white">
+              <View
+                key={exp.id}
+                className="p-4 rounded-2xl
+                bg-white dark:bg-neutral-900 
+                border border-neutral-200 dark:border-neutral-700
+                gap-1"
+              >
+                <Text className="text-base font-semibold dark:text-neutral-200">
                   {exp.role}
                 </Text>
-                <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+
+                <Text className="text-neutral-600 dark:text-neutral-400">
                   {exp.company_name}
                 </Text>
-                <Text className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+
+                <Text className="text-sm text-neutral-500">
                   {formatDate(exp.start_date)} — {exp.end_date ? formatDate(exp.end_date) : 'Present'}
                 </Text>
-                {exp.description && (
-                  <Text className="text-sm text-neutral-600 dark:text-neutral-300 mt-2">
-                    {exp.description}
-                  </Text>
-                )}
-              </Card>
+              </View>
             ))
           ) : (
-            <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
-              + Add experience
-            </Text>
+            <Text className="text-neutral-500">+ Add experience</Text>
           )}
         </View>
 
         {/* Education */}
         <View className="gap-3">
           <SectionHeader title="Education" />
+
           {resume?.education?.length ? (
             resume.education.map((edu: any) => (
-              <Card key={edu.id} className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-                <Text className="text-base font-semibold text-neutral-900 dark:text-white">
+              <View
+                key={edu.id}
+                className="p-4 rounded-2xl
+                bg-white dark:bg-neutral-900
+                border border-neutral-200 dark:border-neutral-700
+                gap-1"
+              >
+                <Text className="text-base font-semibold dark:text-neutral-200">
                   {edu.degree || 'Degree'}
                 </Text>
-                <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+
+                <Text className="text-neutral-600 dark:text-neutral-400">
                   {edu.institution}
                 </Text>
-                <Text className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+
+                <Text className="text-sm text-neutral-500">
                   {formatDate(edu.start_date)} — {edu.end_date ? formatDate(edu.end_date) : 'Present'}
                 </Text>
-              </Card>
+              </View>
             ))
           ) : (
-            <Text className="text-sm text-neutral-400 dark:text-neutral-500 italic">
-              + Add education
-            </Text>
+            <Text className="text-neutral-500">+ Add education</Text>
           )}
         </View>
 
-        {/* Theme */}
-        <View className="gap-3">
-          <SectionHeader title="Appearance" />
-          <ThemeToggle variant="row" />
-        </View>
-
+        <ThemeToggle />
       </View>
-      <View className="px-5 pt-4">
+
+      <View className="px-5 pb-6">
         <Button
-          className='bg-red-500 border-red-400'
+          className="bg-red-600 border-red-500"
           label="Sign Out"
           onPress={onSignOut}
         />
@@ -168,59 +158,66 @@ function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSig
   )
 }
 
-// ───────────────── EDIT VIEW ─────────────────
+// ───────────── EDIT VIEW ─────────────
 
 function ProfileEdit({ profile, seeker, resume, onCancel, onSave }: any) {
-  const [name, setName] = useState(profile?.full_name ?? '')
-  const [headline, setHeadline] = useState(seeker?.headline ?? '')
-  const [location, setLocation] = useState(seeker?.location ?? '')
-  const [bio, setBio] = useState(seeker?.bio ?? '')
+  const [name, setName] = useState('')
+  const [headline, setHeadline] = useState('')
+  const [location, setLocation] = useState('')
+  const [bio, setBio] = useState('')
 
+  const [experiences, setExperiences] = useState<any[]>([])
+  const [education, setEducation] = useState<any[]>([])
+  const [skills, setSkills] = useState<string[]>([])
+  const [skillInput, setSkillInput] = useState('')
 
+  // ✅ FULL SYNC
+  useEffect(() => {
+    setName(profile?.full_name ?? '')
+    setHeadline(seeker?.headline ?? '')
+    setLocation(seeker?.location ?? '')
+    setBio(seeker?.bio ?? '')
 
-  const [experiences, setExperiences] = useState(resume?.experiences ?? [])
-  const [education, setEducation] = useState(resume?.education ?? [])
+    setExperiences(resume?.experiences ?? [])
+    setEducation(resume?.education ?? [])
+    setSkills(resume?.skills?.map((s: any) => s.name) ?? [])
+  }, [profile, seeker, resume])
 
-  function update(list: any[], setter: any, i: number, field: string, value: string) {
+  function update(
+    list: any[],
+    setter: any,
+    i: number,
+    field: string,
+    value: string | null
+  ) {
     const copy = [...list]
     copy[i] = { ...copy[i], [field]: value }
     setter(copy)
   }
 
-  const [skills, setSkills] = useState<string[]>(
-    resume?.skills?.map((s: any) => s.name) ?? []
-  )
-
-  const [skillInput, setSkillInput] = useState('')
-
   function addSkill(value: string) {
-  const cleaned = value.trim()
-  if (!cleaned) return
+    const cleaned = value.trim()
+    if (!cleaned || skills.includes(cleaned)) return
+    setSkills(prev => [...prev, cleaned])
+    setSkillInput('')
+  }
 
-  if (skills.includes(cleaned)) return // prevent duplicates
-
-  setSkills(prev => [...prev, cleaned])
-  setSkillInput('')
-}
-
-function removeSkill(index: number) {
-  setSkills(prev => prev.filter((_, i) => i !== index))
-}
+  function removeSkill(i: number) {
+    setSkills(prev => prev.filter((_, idx) => idx !== i))
+  }
 
   return (
     <ScrollView contentContainerClassName="px-5 py-6 gap-8">
-
-      <SectionHeader title="Edit Profile" />
 
       <Input label="Full name" value={name} onChangeText={setName} />
       <Input label="Headline" value={headline} onChangeText={setHeadline} />
       <Input label="Location" value={location} onChangeText={setLocation} />
       <Input label="Bio" value={bio} onChangeText={setBio} multiline />
 
+      {/* Skills */}
 <View className="gap-3">
   <SectionHeader title="Skills" />
 
-  {/* Chips */}
   <View className="flex-row flex-wrap gap-2">
     {skills.map((skill, i) => (
       <View
@@ -242,83 +239,154 @@ function removeSkill(index: number) {
     ))}
   </View>
 
-  {/* Input */}
-<Input
-  label="Add skill"
-  value={skillInput}
-  onChangeText={(text) => {
-    // if comma typed
-    if (text.includes(',')) {
-      const parts = text.split(',')
+  <Input
+    label="Add skill"
+    value={skillInput}
+    onChangeText={(text) => {
+      if (text.includes(',')) {
+        const parts = text.split(',')
 
-      parts.forEach(part => {
-        const cleaned = part.trim()
-        if (cleaned) addSkill(cleaned)
-      })
+        parts.forEach(part => {
+          const cleaned = part.trim()
+          if (cleaned) addSkill(cleaned)
+        })
 
-      setSkillInput('') // clear input
-    } else {
-      setSkillInput(text)
-    }
-  }}
-  onSubmitEditing={() => addSkill(skillInput)}
-/>
+        setSkillInput('')
+      } else {
+        setSkillInput(text)
+      }
+    }}
+    onSubmitEditing={() => addSkill(skillInput)}
+  />
 </View>
 
+
       {/* Experience */}
-      <SectionHeader title="Experience" />
+<View className="gap-3">
+  <SectionHeader title="Experience" />
 
-      {experiences.map((exp: any, i: number) => (
-        <View key={i} className="gap-2 p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-          <Input label="Role" value={exp.role} onChangeText={(v) => update(experiences, setExperiences, i, 'role', v)} />
-          <Input label="Company" value={exp.company_name} onChangeText={(v) => update(experiences, setExperiences, i, 'company_name', v)} />
-          <Input label="Start Date (YYYY-MM)" value={exp.start_date} onChangeText={(v) => update(experiences, setExperiences, i, 'start_date', v)} />
-          <Input label="End Date (YYYY-MM)" value={exp.end_date} onChangeText={(v) => update(experiences, setExperiences, i, 'end_date', v)} />
-        </View>
-      ))}
+  {experiences.map((exp, i) => (
+    <View
+      key={i}
+      className="gap-2 p-4 rounded-2xl
+      bg-white dark:bg-neutral-900
+      border border-neutral-200 dark:border-neutral-700"
+    >
+      <Input
+        label="Role"
+        value={exp.role ?? ''}
+        onChangeText={(v) => update(experiences, setExperiences, i, 'role', v)}
+      />
 
-      <Button label="+ Add Experience" onPress={() =>
-        setExperiences([...experiences, { role: '', company_name: '', start_date: '', end_date: '' }])
-      } />
+      <Input
+        label="Company"
+        value={exp.company_name ?? ''}
+        onChangeText={(v) => update(experiences, setExperiences, i, 'company_name', v)}
+      />
 
-      {/* Education */}
-      <SectionHeader title="Education" />
-
-      {education.map((edu: any, i: number) => (
-        <View key={i} className="gap-2 p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-          <Input label="Degree" value={edu.degree} onChangeText={(v) => update(education, setEducation, i, 'degree', v)} />
-          <Input label="Institution" value={edu.institution} onChangeText={(v) => update(education, setEducation, i, 'institution', v)} />
-          <Input label="Start Date (YYYY-MM)" value={edu.start_date} onChangeText={(v) => update(education, setEducation, i, 'start_date', v)} />
-          <Input label="End Date (YYYY-MM)" value={edu.end_date} onChangeText={(v) => update(education, setEducation, i, 'end_date', v)} />
-        </View>
-      ))}
-
-      <Button label="+ Add Education" onPress={() =>
-        setEducation([...education, { degree: '', institution: '', start_date: '', end_date: '' }])
-      } />
-
-      <Button
-        label="Save"
-        onPress={() =>
-          onSave({
-            name,
-            headline,
-            location,
-            bio,
-            skills,
-            experiences,
-            education,
-          })
+      <DateInput
+        label="Start Date"
+        value={exp.start_date}
+        onChange={(date) =>
+          update(experiences, setExperiences, i, 'start_date', date)
         }
       />
 
-      <Button label="Cancel" variant="ghost" onPress={onCancel} />
+      <DateInput
+        label="End Date"
+        value={exp.end_date}
+        onChange={(date) =>
+          update(experiences, setExperiences, i, 'end_date', date)
+        }
+      />
 
+      {/* ✅ REMOVE BUTTON (missing before) */}
+      <Button
+        label="Remove"
+        className='bg-red-500 border-red-500' 
+        onPress={() =>
+          setExperiences(prev => prev.filter((_, idx) => idx !== i))
+        }
+      />
+    </View>
+  ))}
+
+  <Button
+    label="+ Add Experience"
+    onPress={() =>
+      setExperiences(prev => [
+        ...prev,
+        { role: '', company_name: '', start_date: '', end_date: '' }
+      ])
+    }
+  />
+</View>
+
+      {/* Education */}
+<View className="gap-3">
+  <SectionHeader title="Education" />
+
+  {education.map((edu, i) => (
+    <View
+      key={i}
+      className="gap-2 p-4 rounded-2xl
+      bg-white dark:bg-neutral-900
+      border border-neutral-200 dark:border-neutral-700"
+    >
+      <Input
+        label="Degree"
+        value={edu.degree ?? ''}
+        onChangeText={(v) => update(education, setEducation, i, 'degree', v)}
+      />
+
+      <Input
+        label="Institution"
+        value={edu.institution ?? ''}
+        onChangeText={(v) => update(education, setEducation, i, 'institution', v)}
+      />
+
+      <DateInput
+        label="Start Date"
+        value={edu.start_date}
+        onChange={(date) =>
+          update(education, setEducation, i, 'start_date', date)
+        }
+      />
+
+      <DateInput
+        label="End Date"
+        value={edu.end_date ?? ''}
+        onChange={(date) =>
+          update(education, setEducation, i, 'end_date', date)
+        }
+      />
+
+      <Button
+        label="Remove"
+        className='bg-red-500 border-red-500' 
+        onPress={() =>
+          setEducation(prev => prev.filter((_, idx) => idx !== i))
+        }
+      />
+    </View>
+  ))}
+  
+</View>
+
+      <Button label="+ Add Education" onPress={() =>
+        setEducation(prev => [...prev, { degree: '', institution: '', start_date: '', end_date: '' }])
+      } />
+
+      <Button label="Save" onPress={() =>
+        onSave({ name, headline, location, bio, skills, experiences, education })
+      } />
+
+      <Button label="Cancel" onPress={onCancel} />
     </ScrollView>
   )
 }
 
-// ───────────────── MAIN SCREEN ─────────────────
+// ───────────── MAIN ─────────────
 
 export default function SeekerProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -327,9 +395,7 @@ export default function SeekerProfileScreen() {
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'profile' | 'edit'>('profile')
 
-  useEffect(() => { load() }, [])
-
-  async function load() {
+  const load = useCallback(async () => {
     const { data: { user } } = await getSupabase().auth.getUser()
     if (!user) return
 
@@ -342,65 +408,54 @@ export default function SeekerProfileScreen() {
     setSeeker(full?.profile)
     setResume(full)
     setLoading(false)
-  }
+  }, [])
 
-async function handleSave(data: any) {
-  try {
+  useEffect(() => { load() }, [load])
+
+  async function handleSave(data: any) {
     const { data: { user } } = await getSupabase().auth.getUser()
     if (!user) return
 
+    await updateProfile(user.id, { full_name: data.name })
+    await upsertJobSeeker(user.id, {
+      headline: data.headline,
+      bio: data.bio,
+      location: data.location,
+    })
+    await syncUserSkills(user.id, data.skills)
+
     await upsertResume(user.id, {
-      ...data,
-      skills: data.skills.map((name: string) => ({ name })),
       experiences: data.experiences,
       education: data.education,
     })
 
-    Toast.showSuccess('Profile updated')
-    setMode('profile')
     load()
-
-  } catch (err) {
-    console.error(err)
-    Toast.showError('Failed to update')
+    setMode('profile')
   }
-}
-
-async function handleSignOut() {
-  try {
-    await getSupabase().auth.signOut()
-    Toast.showSuccess('Signed out')
-  } catch (err) {
-    console.error(err)
-    Toast.showError('Failed to sign out')
+  async function handleSignOut() {
+    try {
+      await getSupabase().auth.signOut()
+      Toast.showSuccess('Signed out')
+    } catch {
+      Toast.showError('Failed to sign out')
+    }
   }
-}
 
   if (loading) return <PageLayout><View /></PageLayout>
 
   return (
-    <PageLayout header={{ title: 'Profile' }}>
-      {mode === 'profile' ? (
-        <ScrollView>
-        <ProfileView
-          profile={profile}
-          seeker={seeker}
-          resume={resume}
-          userId={profile?.id}
-          onEdit={() => setMode('edit')}
-          onRefresh={load}
-          onSignOut={handleSignOut}   // 👈 add this
-        />
-        </ScrollView>
-      ) : (
-        <ProfileEdit
-          profile={profile}
-          seeker={seeker}
-          resume={resume}
-          onCancel={() => setMode('profile')}
-          onSave={handleSave}
-        />
-      )}
+    <PageLayout>
+      {mode === 'profile'
+        ? <ProfileView
+            profile={profile}
+            seeker={seeker}
+            resume={resume}
+            onEdit={() => setMode('edit')}
+            onRefresh={load}
+            onSignOut={handleSignOut}
+          />
+        : <ProfileEdit profile={profile} seeker={seeker} resume={resume} onCancel={() => setMode('profile')} onSave={handleSave} />
+      }
     </PageLayout>
   )
 }

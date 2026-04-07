@@ -169,170 +169,53 @@ async function resolveSkills(
 export async function upsertResume(userId: string, rawData: any): Promise<boolean> {
   const supabase = getSupabase()
 
-  // Validate and normalize before touching anything
-  const data = normalizeResumeData(rawData)
-
-  const finalBio =
-  data.bio && data.bio.trim().length > 0
-    ? data.bio
-    : (rawData.summary?.slice(0, 500) || null)
-
-  console.log('[DB] upsertResume start:', userId)
-  console.log('[DB] normalized data summary:', {
-    headline:    data.headline,
-    skills:      data.skills.length,
-    experience:  data.experience.length,
-    education:   data.education.length,
-    projects:    data.projects.length,
-    certs:       data.certifications.length,
-  })
-
   try {
-    // ── 1. PROFILES — full_name + onboarded ────────
-    const fullName = data.candidate.name || null
-    if (fullName) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName, onboarded: true })
-        .eq('id', userId)
+    const data = rawData
 
-      if (profileError) {
-        console.error('[DB] profiles update error:', profileError.message)
-      } else {
-        console.log('[DB] profiles updated: full_name =', fullName)
-      }
-    } else {
-      // Still mark as onboarded even if name is missing
-      await supabase
-        .from('profiles')
-        .update({ onboarded: true })
-        .eq('id', userId)
-    }
+    // ── 1. ALWAYS DELETE (CRITICAL FIX) ──
+    await supabase.from('experiences').delete().eq('user_id', userId)
+    await supabase.from('education').delete().eq('user_id', userId)
 
-    // ── 2. JOB SEEKERS — upsert base profile ───────
-    const { error: seekerError } = await supabase
-      .from('job_seekers')
-      .upsert({
-        id:         userId,
-        headline:   data.headline,
-        bio:        finalBio,
-        location:   data.candidate.location || null,
-        ai_summary: data,
-      })
+    console.log('[DB] cleared experiences + education')
 
-    if (seekerError) throw seekerError
-    console.log('[DB] job_seekers upserted')
-
-    // ── 3. CONDITIONAL DELETES — only if AI returned data ──
-    // Never delete a section if AI returned nothing for it
-    if (data.experience.length > 0) {
-      await supabase.from('experiences').delete().eq('user_id', userId)
-      console.log('[DB] cleared experiences (will replace)')
-    }
-    if (data.education.length > 0) {
-      await supabase.from('education').delete().eq('user_id', userId)
-      console.log('[DB] cleared education (will replace)')
-    }
-    if (data.projects.length > 0) {
-      await supabase.from('projects').delete().eq('user_id', userId)
-      console.log('[DB] cleared projects (will replace)')
-    }
-    if (data.certifications.length > 0) {
-      await supabase.from('certifications').delete().eq('user_id', userId)
-      console.log('[DB] cleared certifications (will replace)')
-    }
-    if (data.skills.length > 0) {
-      await supabase.from('job_seeker_skills').delete().eq('user_id', userId)
-      console.log('[DB] cleared job_seeker_skills (will replace)')
-    }
-
-    // ── 4. EXPERIENCES ─────────────────────────────
-    if (data.experience.length > 0) {
-      const payload = data.experience.map((e: any) => ({
-        user_id:      userId,
-        company_name: e.company,
-        role:         e.role,
-        start_date:   normalizeDate(e.startDate),
-        end_date:     e.isCurrent ? null : normalizeDate(e.endDate),
-        description:  e.description || null,
+    // ── 2. EXPERIENCES ──
+    if (data.experiences?.length) {
+      const payload = data.experiences.map((e: any) => ({
+        user_id: userId,
+        company_name: e.company_name ?? e.company ?? '',
+        role: e.role ?? '',
+        start_date: normalizeDate(e.start_date ?? e.startDate),
+        end_date: normalizeDate(e.end_date ?? e.endDate),
+        description: e.description ?? null,
       }))
 
       const { error } = await supabase.from('experiences').insert(payload)
-      if (error) console.error('[DB] experiences insert error:', error.message)
-      else console.log('[DB] inserted', payload.length, 'experiences')
+      if (error) throw error
+
+      console.log('[DB] inserted experiences:', payload.length)
     }
 
-    // ── 5. EDUCATION ───────────────────────────────
-    if (data.education.length > 0) {
+    // ── 3. EDUCATION ──
+    if (data.education?.length) {
       const payload = data.education.map((e: any) => ({
-        user_id:        userId,
-        institution:    e.institution,
-        degree:         e.degree        || null,
-        field_of_study: e.fieldOfStudy  || null,
-        start_date:     normalizeDate(e.startDate),
-        end_date:       e.isCurrent ? null : normalizeDate(e.endDate),
+        user_id: userId,
+        institution: e.institution ?? '',
+        degree: e.degree ?? null,
+        field_of_study: e.field_of_study ?? e.fieldOfStudy ?? null,
+        start_date: normalizeDate(e.start_date ?? e.startDate),
+        end_date: normalizeDate(e.end_date ?? e.endDate),
       }))
 
       const { error } = await supabase.from('education').insert(payload)
-      if (error) console.error('[DB] education insert error:', error.message)
-      else console.log('[DB] inserted', payload.length, 'education rows')
+      if (error) throw error
+
+      console.log('[DB] inserted education:', payload.length)
     }
 
-    // ── 6. PROJECTS ────────────────────────────────
-    if (data.projects.length > 0) {
-      const payload = data.projects.map((p: any) => ({
-        user_id:     userId,
-        title:       p.title,
-        description: p.description || null,
-        project_url: p.url         || null,
-      }))
-
-      const { error } = await supabase.from('projects').insert(payload)
-      if (error) console.error('[DB] projects insert error:', error.message)
-      else console.log('[DB] inserted', payload.length, 'projects')
-    }
-
-    // ── 7. CERTIFICATIONS ──────────────────────────
-    if (data.certifications.length > 0) {
-      const payload = data.certifications.map((c: any) => ({
-        user_id:    userId,
-        name:       c.name,
-        issuer:     c.issuer || null,
-        issue_date: normalizeDate(c.date),
-      }))
-
-      const { error } = await supabase.from('certifications').insert(payload)
-      if (error) console.error('[DB] certifications insert error:', error.message)
-      else console.log('[DB] inserted', payload.length, 'certifications')
-    }
-
-    // ── 8. SKILLS — resolve + bulk insert ──────────
-    if (data.skills.length > 0) {
-      const skillNames = data.skills.map((s: any) => s.name as string)
-      const resolved   = await resolveSkills(skillNames)
-
-      console.log('[DB] resolved', resolved.length, '/', skillNames.length, 'skills')
-
-      if (resolved.length > 0) {
-        const junctionRows = resolved.map(s => ({
-          user_id:  userId,
-          skill_id: s.id,
-        }))
-
-        const { error } = await supabase
-          .from('job_seeker_skills')
-          .insert(junctionRows)
-
-        if (error) console.error('[DB] job_seeker_skills insert error:', error.message)
-        else console.log('[DB] inserted', junctionRows.length, 'skill links')
-      }
-    }
-
-    console.log('[DB] upsertResume success for', userId)
     return true
 
   } catch (err: any) {
-    console.error('[DB] upsertResume fatal error:', err?.message ?? err)
+    console.error('[DB] upsertResume error:', err.message)
     return false
   }
 }
@@ -440,3 +323,4 @@ export async function getFullResume(userId: string) {
     return null
   }
 }
+
