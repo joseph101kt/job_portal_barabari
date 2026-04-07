@@ -1,3 +1,6 @@
+
+// 🔥 DEBUG VERSION — DO NOT REMOVE LOGS YET
+
 import React, { useEffect, useState } from 'react'
 import {
   View, Text, FlatList, Pressable, RefreshControl,
@@ -20,7 +23,7 @@ import {
   supabase,
 } from '@my-app/supabase'
 
-const TABS: { key: ApplicationStatus | 'all'; label: string }[] = [
+const TABS = [
   { key: 'all', label: 'All' },
   { key: 'applied', label: 'Applied' },
   { key: 'shortlisted', label: 'Shortlisted' },
@@ -28,38 +31,14 @@ const TABS: { key: ApplicationStatus | 'all'; label: string }[] = [
   { key: 'rejected', label: 'Rejected' },
 ]
 
-type ResumeData = {
-  experiences?: {
-    role: string
-    company_name?: string
-    start_date?: string
-    end_date?: string
-  }[]
-  education?: {
-    degree: string
-    institution?: string
-  }[]
-  skills?: {
-    name: string
-  }[]
-}
-
-type EnrichedApplication = Application & {
-  profile?: any
-  jobSeeker?: any
-  skills?: { name: string }[]
-  resume?: ResumeData | null
-}
-
 export default function JobApplicantsScreen() {
   const params = useLocalSearchParams()
   const id = params?.id as string | undefined
-
   const router = useRouter()
 
   const [title, setTitle] = useState('')
-  const [apps, setApps] = useState<EnrichedApplication[]>([])
-  const [activeTab, setActiveTab] = useState<ApplicationStatus | 'all'>('all')
+  const [apps, setApps] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState('all')
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
@@ -80,23 +59,41 @@ export default function JobApplicantsScreen() {
         getApplicationsForListing(id),
       ])
 
-      // 🔥 Enrich data (frontend only)
+      console.log('📄 LISTING:', listing)
+      console.log('📄 RAW APPLICATIONS:', applications)
+
       const enrichedApps = await Promise.all(
         (applications ?? []).map(async (app) => {
           try {
+            console.log('👤 Processing applicant:', app.user_id)
+
             const [profile, jobSeeker, resume] = await Promise.all([
               getProfile(app.user_id),
               getJobSeeker(app.user_id),
               getFullResume(app.user_id),
             ])
 
+            console.log('🧠 PROFILE:', profile)
+            console.log('🧠 JOB SEEKER:', jobSeeker)
+            console.log('🧠 RAW RESUME:', resume)
+
+            // 🔥 CRITICAL: normalize resume shape
+            const normalizedResume = {
+              experience: resume?.experiences ?? resume?.experiences ?? [],
+              education: resume?.education ?? [],
+              skills: resume?.skills ?? [],
+            }
+
+            console.log('✅ NORMALIZED RESUME:', normalizedResume)
+
             return {
               ...app,
               profile,
               jobSeeker,
-              skills: resume?.skills ?? [],
-              resume, 
+              skills: normalizedResume.skills,
+              resume: normalizedResume,
             }
+
           } catch (err) {
             console.error('❌ Enrich error:', err)
             return {
@@ -110,9 +107,10 @@ export default function JobApplicantsScreen() {
         })
       )
 
+      console.log('✅ FINAL ENRICHED APPS:', enrichedApps)
+
       setTitle(listing?.title ?? 'Applicants')
       setApps(enrichedApps)
-      console.log('✅ Applicants loaded:', enrichedApps)
 
     } catch (err) {
       console.error('❌ Load applicants error:', err)
@@ -121,40 +119,45 @@ export default function JobApplicantsScreen() {
   }
 
   async function handleRefresh() {
+    console.log('🔄 Refresh triggered')
     setRefreshing(true)
     await load()
     setRefreshing(false)
   }
 
-  async function handleStartChat(app: EnrichedApplication) {
-  try {
-    const { data: { user } } = await getSupabase().auth.getUser()
-    if (!user) return
+  async function handleStartChat(app: any) {
+    try {
+      console.log('💬 Starting chat for:', app.id)
 
-    // ✅ this creates/activates chat
-    await startChat(app.id, 'poster')
+      const { data: { user } } = await getSupabase().auth.getUser()
+      if (!user) {
+        console.error('❌ No user found')
+        return
+      }
 
-    const { error } = await supabase.from('messages').insert({
-      application_id: app.id,
-      sender_id: user.id,
-      content: "Hi",
-    })
+      await startChat(app.id, 'poster')
 
-    if (error) {
-      console.error('❌ send message error:', error)
+      const { error } = await supabase.from('messages').insert({
+        application_id: app.id,
+        sender_id: user.id,
+        content: "Hi",
+      })
+
+      if (error) {
+        console.error('❌ send message error:', error)
+      }
+
+      router.push('/poster/chat')
+
+    } catch (err) {
+      console.error('❌ start chat error:', err)
+      Toast.showError('Failed to start chat')
     }
-      router.push('/poster/chat');
-
-
-  } catch (err) {
-    console.error('❌ start chat error:', err)
-    Toast.showError('Failed to start chat')
   }
-}
-
-  // ───────── STATUS ACTIONS ─────────
 
   async function updateStatus(appId: string, status: ApplicationStatus) {
+    console.log('🔄 Updating status:', appId, status)
+
     const updated = await updateApplicationStatus(appId, status)
 
     if (!updated) {
@@ -167,7 +170,9 @@ export default function JobApplicantsScreen() {
     )
   }
 
-  async function handleReject(app: EnrichedApplication) {
+  async function handleReject(app: any) {
+    console.log('❌ Rejecting:', app.id)
+
     try {
       const updated = await updateApplicationStatus(app.id, 'rejected')
 
@@ -190,20 +195,10 @@ export default function JobApplicantsScreen() {
     }
   }
 
-
-  // ───────── FILTER ─────────
-
   const filtered =
     activeTab === 'all'
       ? apps
       : apps.filter(a => a.status === activeTab)
-
-  const getCount = (status: ApplicationStatus | 'all') =>
-    status === 'all'
-      ? apps.length
-      : apps.filter(a => a.status === status).length
-
-  // ───────── UI ─────────
 
   return (
     <PageLayout
@@ -224,47 +219,6 @@ export default function JobApplicantsScreen() {
     >
       <Stack.Screen options={{ title: 'Applicants' }} />
 
-
-      {/* Tabs */}
-      <View className="px-5 pt-2 pb-2">
-        <View className="flex-row bg-neutral-100 dark:bg-neutral-800 rounded-xl p-1 gap-1">
-          {TABS.map(tab => {
-            const isActive = activeTab === tab.key
-            const count = getCount(tab.key)
-
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => setActiveTab(tab.key)}
-                className={`flex-row items-center gap-1 px-3 py-1.5 rounded-lg
-                  ${isActive ? 'bg-white dark:bg-neutral-900 shadow-sm' : ''}
-                `}
-              >
-                <Text
-                  className={`text-xs font-medium
-                    ${isActive
-                      ? 'text-neutral-900 dark:text-white'
-                      : 'text-neutral-500 dark:text-neutral-400'
-                    }
-                  `}
-                >
-                  {tab.label}
-                </Text>
-
-                {count > 0 && (
-                  <View className="px-1.5 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-700">
-                    <Text className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300">
-                      {count}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            )
-          })}
-        </View>
-      </View>
-
-      {/* List */}
       <FlatList
         data={filtered}
         keyExtractor={item => item.id}
@@ -272,11 +226,11 @@ export default function JobApplicantsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         contentContainerClassName="gap-3 px-5 pt-2 pb-24"
-        showsVerticalScrollIndicator={false}
 
-        renderItem={({ item }) => (
-          <View className="gap-2">
+        renderItem={({ item }) => {
+          console.log('🎯 RENDER ITEM:', item)
 
+          return (
             <ApplicantCard
               name={item.profile?.full_name ?? 'Candidate'}
               avatarUri={item.profile?.avatar_url ?? undefined}
@@ -284,49 +238,42 @@ export default function JobApplicantsScreen() {
               location={item.jobSeeker?.location ?? undefined}
               appliedAt={new Date(item.applied_at).toLocaleDateString()}
               status={item.status}
+
               skills={item.skills ?? []}
+
               experiences={
-                item.resume?.experiences?.map(exp => ({
+                item.resume?.experience?.map((exp: { role: any; company_name: any }) => ({
                   title: exp.role,
                   company: exp.company_name,
                 })) ?? []
-              }              
-              education={item.resume?.education ?? []}
-              onStartChat={() => handleStartChat(item)} 
-              onView={() => {
-                console.log('View profile:', item.user_id)
-              }}
+              }
 
+              education={item.resume?.education ?? []}
+
+              onStartChat={() => handleStartChat(item)}
               onShortlist={
                 item.status === 'applied'
                   ? () => updateStatus(item.id, 'shortlisted')
                   : undefined
               }
-
               onReject={
                 item.status === 'applied' || item.status === 'shortlisted'
                   ? () => handleReject(item)
                   : undefined
               }
-
               onHire={
                 item.status === 'shortlisted'
                   ? () => updateStatus(item.id, 'hired')
                   : undefined
               }
             />
-
-          </View>
-        )}
+          )
+        }}
 
         ListEmptyComponent={
           <EmptyState
             emoji="👥"
-            title={
-              activeTab === 'all'
-                ? 'No applicants yet'
-                : `No ${activeTab} applicants`
-            }
+            title="No applicants yet"
           />
         }
       />

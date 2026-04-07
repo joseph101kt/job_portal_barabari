@@ -110,6 +110,7 @@ export async function withdrawApplication(applicationId: string): Promise<boolea
 }
 
 // Job poster: view all applications for a listing
+
 export async function getApplicationsForListing(listingId: string) {
   console.log('🚀 Fetching applications for listing:', listingId)
 
@@ -122,15 +123,10 @@ export async function getApplicationsForListing(listingId: string) {
     .from('applications')
     .select(`
       *,
-      applicant:job_seekers (
+      profile:profiles (
         id,
-        headline,
-        location,
-        profiles (
-          id,
-          full_name,
-          avatar_url
-        )
+        full_name,
+        avatar_url
       )
     `)
     .eq('job_id', listingId)
@@ -143,22 +139,10 @@ export async function getApplicationsForListing(listingId: string) {
 
   console.log('✅ Applications raw:', data)
 
-  // flatten structure for UI
-  const formatted = (data ?? []).map(app => ({
-    ...app,
-    applicant: {
-      id: app.applicant?.id,
-      name: app.applicant?.profiles?.full_name,
-      avatar: app.applicant?.profiles?.avatar_url,
-      headline: app.applicant?.headline,
-      location: app.applicant?.location,
-    },
-  }))
-
-  console.log('✅ Applications formatted:', formatted)
-
-  return formatted
+  return data ?? []
 }
+
+
 // Job poster: update application status (shortlist / reject / hire)
 export async function updateApplicationStatus(
   applicationId: string,
