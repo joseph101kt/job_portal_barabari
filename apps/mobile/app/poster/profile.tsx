@@ -19,50 +19,82 @@ function PosterProfileView({ profile, poster, onEdit, onSignOut }: any) {
       <ProfileHeader
         name={profile?.full_name ?? 'Your Name'}
         avatarUri={profile?.avatar_url ?? undefined}
-        headline={poster?.company || 'Add your company'}
-        location={poster?.website || undefined}
+        headline={poster?.company ?? 'Add your company'}
+        location={poster?.website ?? undefined}
         isOwn
         onEdit={onEdit}
       />
 
       <Divider />
 
-      <View className="px-5 py-5 gap-5">
+      <View className="px-5 py-6 gap-8">
 
-        {/* ── Company Section ── */}
+        {/* Company */}
         <View className="gap-3">
-          <SectionHeader title="Company" action={{ label: 'Edit', onPress: onEdit }} />
+          <SectionHeader title="Company" />
 
-          {poster?.description ? (
-            <Text className="text-sm text-neutral-600 dark:text-neutral-300">
-              {poster.description}
-            </Text>
-          ) : (
-            <Text className="text-neutral-400">
-              + Add company description to attract candidates
-            </Text>
-          )}
+          <View
+            className="p-4 rounded-2xl
+            bg-white dark:bg-neutral-900
+            border border-neutral-200 dark:border-neutral-700"
+          >
+            {poster?.description ? (
+              <Text className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                {poster.description}
+              </Text>
+            ) : (
+              <Text className="text-neutral-500">
+                + Add company description to attract candidates
+              </Text>
+            )}
+          </View>
         </View>
 
-        {/* ── Appearance Section ── */}
+        {/* Company Info (NEW — adds structure like seeker sections) */}
         <View className="gap-3">
+          <SectionHeader title="Details" />
+
+          <View
+            className="p-4 rounded-2xl
+            bg-white dark:bg-neutral-900 
+            border border-neutral-200 dark:border-neutral-700
+            gap-2"
+          >
+            <View>
+              <Text className="text-xs text-neutral-500">Company</Text>
+              <Text className="text-base font-semibold dark:text-neutral-200">
+                {poster?.company || 'Not set'}
+              </Text>
+            </View>
+
+            <View>
+              <Text className="text-xs text-neutral-500">Website</Text>
+              <Text className="text-neutral-700 dark:text-neutral-300">
+                {poster?.website || 'Not set'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Appearance */}
+        <View className="gap-3 p-2">
           <SectionHeader title="Appearance" />
-          <ThemeToggle variant="row" />
+            <ThemeToggle />
         </View>
 
-        <View className="mt-6">
-          <Button
-            className='bg-red-500 border-red-300'
-            label="Sign Out"
-            onPress={onSignOut}
-          />
-        </View>
+      </View>
 
+      {/* Sign Out */}
+      <View className="px-5 pb-6">
+        <Button
+          className="bg-red-600 border-red-500"
+          label="Sign Out"
+          onPress={onSignOut}
+        />
       </View>
     </>
   )
 }
-
 // ───────────────── EDIT VIEW ─────────────────
 
 function PosterProfileEdit({ profile, poster, onCancel, onSave }: any) {
@@ -72,37 +104,49 @@ function PosterProfileEdit({ profile, poster, onCancel, onSave }: any) {
   const [description, setDescription] = useState(poster?.description ?? '')
 
   return (
-    <ScrollView contentContainerClassName="px-5 py-5 gap-5">
+    <ScrollView contentContainerClassName="px-5 py-6 gap-8">
 
       <SectionHeader title="Edit Profile" />
 
-      <Input label="Full name" value={name} onChangeText={setName} />
-      <Input label="Company" value={company} onChangeText={setCompany} />
-      <Input label="Website" value={website} onChangeText={setWebsite} />
+      {/* Basic Info */}
+      <View className="gap-4">
+        <Input label="Full name" value={name} onChangeText={setName} />
+        <Input label="Company" value={company} onChangeText={setCompany} />
+        <Input label="Website" value={website} onChangeText={setWebsite} />
+      </View>
 
-      <Input
-        label="Company Description"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={5}
-      />
+      {/* Description */}
+      <View className="gap-3">
+        <SectionHeader title="Company Description" />
 
-      <View className="flex-row gap-3 pt-4">
-        <Button label="Cancel" variant="ghost" fullWidth onPress={onCancel} />
+        <Input
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={5}
+        />
+      </View>
+
+      {/* ACTIONS */}
+      <View className="flex-col gap-3 pt-4">
+
         <Button
-          label="Save"
-          fullWidth
+          label="Save Profile"
           onPress={() =>
             onSave({ name, company, website, description })
           }
+        />
+      </View>
+      <View className="flex-col gap-3 pt-4">
+        <Button
+          label="Cancel"
+          onPress={onCancel}
         />
       </View>
 
     </ScrollView>
   )
 }
-
 // ───────────────── MAIN SCREEN ─────────────────
 
 export default function PosterProfileScreen() {
