@@ -1,3 +1,5 @@
+import { CallScreen } from './interview/call';
+
 // packages/features/src/index.ts
 export { useCounter } from './hooks/useCounter';
 export { useRoomWeb } from './livekit/web';
@@ -11,3 +13,6 @@ export { ResumeUploadButton } from './resume';
 
 
 export { ChatPage } from './chat';
+
+export { CallScreen } from './interview';
+

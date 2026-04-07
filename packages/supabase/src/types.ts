@@ -172,38 +172,43 @@ export type JobView = {
   viewed_at: string
 }
 
-// ── Interviews ────────────────────────────────────────────────────────────────
+// ── Interviews (FIXED) ────────────────────────────────────────────────
+
+export type InterviewStatus =
+  | 'scheduled'
+  | 'active'
+  | 'ended'
+  | 'cancelled'
 
 export type Interview = {
   id:             string
-  listing_id:     string | null
-  candidate_id:   string
-  interviewer_id: string
+  application_id: string
   room_name:      string
-  status:         'scheduled' | 'active' | 'ended' | 'cancelled'
+  status:         InterviewStatus
   scheduled_at:   string | null
   started_at:     string | null
   ended_at:       string | null
-  feedback:       string | null
-  rating:         number | null
-  decision:       'hire' | 'reject' | 'pending' | null
+  cancelled_at:   string | null
   created_at:     string
-  // joined
-  candidate?:     Profile
-  interviewer?:   Profile
-  listing?:       JobListing
 }
 
-// ── Messages ──────────────────────────────────────────────────────────────────
+// ── Messages (UPDATED) ────────────────────────────────────────────────
+
+export type MessageType =
+  | 'text'
+  | 'interview_invite'
 
 export type Message = {
-  id:         string
-  application_id:    string
-  sender_id:  string | null
-  content:    string
-  created_at: string
-  sender?:    Profile
+  id:             string
+  application_id: string
+  sender_id:      string | null
+  content:        string
+  type:           MessageType
+  created_at:     string
+  sender?:        Profile
+  interview_id?: string
 }
+
 
 // ── Composite ─────────────────────────────────────────────────────────────────
 

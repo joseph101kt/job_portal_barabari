@@ -10,7 +10,6 @@ import {
   getApplicationsForListing,
   getListingById,
   updateApplicationStatus,
-  createInterview,
   getSupabase,
   getProfile,
   getJobSeeker,
@@ -191,23 +190,6 @@ export default function JobApplicantsScreen() {
     }
   }
 
-  async function handleInterview(app: EnrichedApplication) {
-    const { data: { user } } = await getSupabase().auth.getUser()
-    if (!user) return
-
-    const interview = await createInterview({
-      candidate_id: app.user_id,
-      interviewer_id: user.id,
-      listing_id: id,
-    })
-
-    if (interview) {
-      router.push({
-        pathname: '/poster/interview',
-        params: { roomName: interview.room_name },
-      })
-    }
-  }
 
   // ───────── FILTER ─────────
 
@@ -331,17 +313,6 @@ export default function JobApplicantsScreen() {
                   : undefined
               }
             />
-
-            {item.status === 'shortlisted' && (
-              <Pressable
-                onPress={() => handleInterview(item)}
-                className="mx-1 py-2.5 rounded-xl bg-primary-50 border border-primary-100 items-center"
-              >
-                <Text className="text-sm font-semibold text-primary-600">
-                  🎥 Schedule interview
-                </Text>
-              </Pressable>
-            )}
 
           </View>
         )}

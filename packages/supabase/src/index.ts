@@ -36,12 +36,11 @@ export {
 } from './queries/applications'
 
 export {
-  getMyInterviews,
-  getInterviewByRoom,
-  createInterview,
-  updateInterview,
-  startInterview,
+  scheduleInterview,
+  joinInterview,
   endInterview,
+  cancelInterview,
+  submitFeedback,
 } from './queries/interviews'
 
 export {
@@ -77,6 +76,7 @@ export type {
   Interview,
   Message,
   JobSeekerFull,
+  InterviewStatus,
   normalizeCreateJobListing,
   validateCreateJobListing,
 } from './types'

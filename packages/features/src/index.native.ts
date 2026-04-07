@@ -12,3 +12,5 @@ export * from './ai'
 export { ResumeUploadButton } from './resume';
 
 export { ChatPage } from './chat';
+
+export { CallScreen } from './interview';

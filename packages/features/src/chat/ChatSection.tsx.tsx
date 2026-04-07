@@ -10,26 +10,40 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
+
 import { getSupabase } from '@my-app/supabase'
+import {
+  ScheduleInterviewBtn,
+  ScheduleInterviewModal,
+} from '../interview/scheduleInterview'
+import { InterviewCard } from '../interview/InterviewCard.tsx'
 
 type Message = {
   id: string
   content: string
   sender_id: string | null
   created_at: string
+  type?: 'text' | 'interview_invite'
+  interview_id?: string
 }
 
 type Props = {
   applicationId: string
   onBack?: () => void
+  role?: 'poster' | 'job_seeker'
 }
 
-export function ChatSection({ applicationId, onBack }: Props) {
+export function ChatSection({
+  applicationId,
+  onBack,
+  role = 'job_seeker',
+}: Props) {
   const supabase = getSupabase()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
+  const [showSchedule, setShowSchedule] = useState(false)
 
   const flatRef = useRef<FlatList>(null)
 
@@ -40,10 +54,8 @@ export function ChatSection({ applicationId, onBack }: Props) {
     })
   }, [])
 
-  // ================= FETCH MESSAGES =================
+  // ================= FETCH =================
   const fetchMessages = async () => {
-    console.log('📥 fetching messages...')
-
     const { data } = await supabase
       .from('messages')
       .select('*')
@@ -57,11 +69,9 @@ export function ChatSection({ applicationId, onBack }: Props) {
     }, 100)
   }
 
-  // ================= REALTIME + INITIAL LOAD =================
+  // ================= REALTIME =================
   useEffect(() => {
     if (!applicationId) return
-
-    console.log('🟢 subscribe chat:', applicationId)
 
     fetchMessages()
 
@@ -78,27 +88,9 @@ export function ChatSection({ applicationId, onBack }: Props) {
         (payload) => {
           const newMsg = payload.new as Message
 
-          console.log('🔥 realtime message:', newMsg)
-
           setMessages((prev) => {
-            // 🔥 replace matching temp message
-            const tempIndex = prev.findIndex(
-              (m) =>
-                m.id.startsWith('temp-') &&
-                m.content === newMsg.content &&
-                m.sender_id === newMsg.sender_id
-            )
-
-            if (tempIndex !== -1) {
-              const updated = [...prev]
-              updated[tempIndex] = newMsg
-              return updated
-            }
-
-            // ✅ prevent true duplicates
-            const exists = prev.find((m) => m.id === newMsg.id)
-            if (exists) return prev
-
+            // ✅ Prevent duplicates (now works because IDs match)
+            if (prev.find((m) => m.id === newMsg.id)) return prev
             return [...prev, newMsg]
           })
 
@@ -110,49 +102,53 @@ export function ChatSection({ applicationId, onBack }: Props) {
       .subscribe()
 
     return () => {
-      console.log('🔴 unsubscribe chat:', applicationId)
       supabase.removeChannel(channel)
     }
   }, [applicationId])
 
-  // ================= SEND MESSAGE =================
+  // ================= SEND =================
   const sendMessage = async () => {
     const messageText = text.trim()
     if (!messageText) return
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
     if (!user) return
 
-    const tempMessage: Message = {
-      id: 'temp-' + Date.now(),
+    // ✅ Generate SAME ID for optimistic + DB
+    const id = crypto.randomUUID()
+
+    const newMessage: Message = {
+      id,
       content: messageText,
       sender_id: user.id,
       created_at: new Date().toISOString(),
+      type: 'text',
     }
 
-    // ✅ optimistic UI
-    setMessages((prev) => [...prev, tempMessage])
+    // ✅ Optimistic update
+    setMessages((prev) => [...prev, newMessage])
     setText('')
 
     setTimeout(() => {
       flatRef.current?.scrollToEnd({ animated: true })
     }, 100)
 
-    const { error } = await supabase.from('messages').insert({
+    // ✅ Insert with SAME ID
+    await supabase.from('messages').insert({
+      id, // 🔥 critical fix
       application_id: applicationId,
       sender_id: user.id,
       content: messageText,
+      type: 'text',
     })
-
-    if (error) {
-      console.error('❌ send message error:', error)
-    }
   }
 
   // ================= UI =================
   return (
     <View className="flex-1 bg-white dark:bg-neutral-900">
-
       {/* HEADER */}
       <View className="h-14 px-4 flex-row items-center border-b border-neutral-200 dark:border-neutral-800">
         {onBack && (
@@ -165,11 +161,19 @@ export function ChatSection({ applicationId, onBack }: Props) {
         </Text>
       </View>
 
-      {/* BODY */}
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        {/* MODAL */}
+        {showSchedule && (
+          <ScheduleInterviewModal
+            applicationId={applicationId}
+            onClose={() => setShowSchedule(false)}
+          />
+        )}
+
+        {/* MESSAGES */}
         <FlatList
           ref={flatRef}
           data={messages}
@@ -178,8 +182,23 @@ export function ChatSection({ applicationId, onBack }: Props) {
           renderItem={({ item }) => {
             const isMine = item.sender_id === userId
 
+            if (item.type === 'interview_invite' && item.interview_id) {
+              return (
+                <View className="mb-3">
+                  <InterviewCard
+                    interviewId={item.interview_id}
+                    role={role}
+                  />
+                </View>
+              )
+            }
+
             return (
-              <View className={`mb-2 ${isMine ? 'items-end' : 'items-start'}`}>
+              <View
+                className={`mb-2 ${
+                  isMine ? 'items-end' : 'items-start'
+                }`}
+              >
                 <View
                   className={`px-4 py-2 rounded-2xl max-w-[75%] ${
                     isMine
@@ -187,7 +206,13 @@ export function ChatSection({ applicationId, onBack }: Props) {
                       : 'bg-neutral-200 dark:bg-neutral-700'
                   }`}
                 >
-                  <Text className={`${isMine ? 'text-white' : 'text-black dark:text-white'}`}>
+                  <Text
+                    className={`${
+                      isMine
+                        ? 'text-white'
+                        : 'text-black dark:text-white'
+                    }`}
+                  >
                     {item.content}
                   </Text>
                 </View>
@@ -198,6 +223,12 @@ export function ChatSection({ applicationId, onBack }: Props) {
 
         {/* INPUT */}
         <View className="flex-row items-center gap-2 p-3 border-t border-neutral-200 dark:border-neutral-800">
+          {role === 'poster' && (
+            <ScheduleInterviewBtn
+              onPress={() => setShowSchedule(true)}
+            />
+          )}
+
           <TextInput
             value={text}
             onChangeText={setText}

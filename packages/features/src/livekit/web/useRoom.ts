@@ -9,46 +9,58 @@ export function useRoom() {
   const [status, setStatus] = useState<ConnectionStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const connect = useCallback(async (options: RoomOptions) => {
-    try {
-      setStatus('connecting');
-      setError(null);
+const connect = useCallback(async (options: RoomOptions) => {
+  try {
+    setStatus('connecting');
+    setError(null);
 
-      // browser handles permissions via getUserMedia automatically
-      const { token, url } = await fetchToken(options);
+    const { token, url } = await fetchToken(options);
 
-      const newRoom = new Room();
-      roomRef.current = newRoom;
-      setRoom(newRoom);
+    const newRoom = new Room();
 
-      newRoom.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
-        console.log('[LiveKit web] state:', state);
-        if (state === ConnectionState.Connected)    setStatus('connected');
-        if (state === ConnectionState.Disconnected) setStatus('disconnected');
-        if (state === ConnectionState.Reconnecting) setStatus('connecting');
-      });
+    // ❗ DO NOT set room yet
+    roomRef.current = newRoom;
 
-      newRoom.on(RoomEvent.Disconnected, () => {
+    newRoom.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+      console.log('[LiveKit] state:', state);
+
+      if (state === ConnectionState.Connected) {
+        console.log('✅ CONNECTED');
+
+        // ✅ NOW it's safe
+        setRoom(newRoom);
+        setStatus('connected');
+
+        // ✅ NOW localParticipant exists
+        newRoom.localParticipant.setCameraEnabled(true);
+        newRoom.localParticipant.setMicrophoneEnabled(true);
+
+        console.log(
+          '🎥 local video publications:',
+          newRoom.localParticipant.videoTrackPublications.size
+        );
+      }
+
+      if (state === ConnectionState.Disconnected) {
         setStatus('disconnected');
-        roomRef.current = null;
         setRoom(null);
-      });
+        roomRef.current = null;
+      }
+    });
 
-      await newRoom.connect(url, token, {
-        autoSubscribe: true,
-      });
+    await newRoom.connect(url, token, {
+      autoSubscribe: true,
+    });
 
-      // enable cam + mic after connect
-      await newRoom.localParticipant.enableCameraAndMicrophone();
+    await newRoom.startAudio();
 
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[LiveKit web] Connect failed:', msg);
-      setError(msg);
-      setStatus('error');
-    }
-  }, []);
-
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[LiveKit] Connect failed:', msg);
+    setError(msg);
+    setStatus('error');
+  }
+}, []);
   const disconnect = useCallback(async () => {
     await roomRef.current?.disconnect();
     roomRef.current = null;

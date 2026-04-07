@@ -26,6 +26,7 @@ export function ChatPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [role, setRole] = useState<'poster' | 'seeker'>('seeker')
+  const [userId, setUserId] = useState<string | null>(null)
 
   // ================= FETCH CHATS =================
   const fetchChats = async () => {
@@ -33,6 +34,8 @@ export function ChatPage() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+
+    setUserId(user.id)
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -59,69 +62,88 @@ export function ChatPage() {
 
   // ================= REALTIME UPDATE =================
   const handleIncomingMessage = (msg: any) => {
-    const chatId = msg.application_id
+    const chatId = String(msg.application_id)
+    const isMine = msg.sender_id === userId
 
-    // 🔥 1. check if chat exists in active
+    let found = false
+
+    // ✅ ACTIVE CHATS
     setActiveChats((prevActive) => {
-      const exists = prevActive.find((c) => c.id === chatId)
+      const exists = prevActive.find(
+        (c) => String(c.id) === chatId
+      )
 
-      if (exists) {
-        return prevActive
-          .map((chat) =>
-            chat.id === chatId
-              ? {
-                  ...chat,
-                  lastMessage: msg.content,
-                  lastMessageAt: msg.created_at,
-                  unreadCount:
-                    selectedId === chatId
-                      ? 0
-                      : (chat.unreadCount || 0) + 1,
-                }
-              : chat
-          )
-          .sort((a, b) =>
-            (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
-          )
-      }
+      if (!exists) return prevActive
+
+      found = true
 
       return prevActive
+        .map((chat) =>
+          String(chat.id) === chatId
+            ? {
+                ...chat,
+                lastMessage: msg.content,
+                lastMessageAt: msg.created_at,
+
+                unreadCount:
+                  selectedId === chatId
+                    ? 0
+                    : isMine
+                    ? chat.unreadCount || 0
+                    : (chat.unreadCount || 0) + 1,
+              }
+            : chat
+        )
+        .sort((a, b) =>
+          (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
+        )
     })
 
-    // 🔥 2. if not in active → move from inactive
+    // ✅ INACTIVE → ACTIVE
     setInactiveChats((prevInactive) => {
-      const chat = prevInactive.find((c) => c.id === chatId)
+      const chat = prevInactive.find(
+        (c) => String(c.id) === chatId
+      )
+
       if (!chat) return prevInactive
+
+      found = true
 
       const updatedChat: ChatItem = {
         ...chat,
         lastMessage: msg.content,
         lastMessageAt: msg.created_at,
-        unreadCount: selectedId === chatId ? 0 : 1,
+        unreadCount:
+          selectedId === chatId || isMine ? 0 : 1,
       }
 
-      // ✅ add to active
       setActiveChats((prev) =>
         [updatedChat, ...prev].sort((a, b) =>
           (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
         )
       )
 
-      // ✅ remove from inactive
-      return prevInactive.filter((c) => c.id !== chatId)
+      return prevInactive.filter(
+        (c) => String(c.id) !== chatId
+      )
     })
+
+    // ❌ REMOVED fetchChats fallback (caused flashing)
+    if (!found) {
+      console.warn('Message for unknown chat:', msg)
+    }
   }
 
   // ================= HANDLE SELECT =================
   const handleSelect = async (id: string, isInactive?: boolean) => {
     if (isInactive && role === 'poster') {
       await startChat(id, role)
-      await fetchChats() // only here we refetch
+      await fetchChats()
     }
 
     setSelectedId(id)
 
-    // ✅ reset unread count
+    // reset unread
     setActiveChats((prev) =>
       prev.map((chat) =>
         chat.id === id ? { ...chat, unreadCount: 0 } : chat
@@ -131,6 +153,8 @@ export function ChatPage() {
 
   // ================= REALTIME LISTENER =================
   useEffect(() => {
+    if (!userId) return
+
     const channel = supabase
       .channel('sidebar-updates')
       .on(
@@ -149,7 +173,7 @@ export function ChatPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [selectedId])
+  }, [userId]) // ✅ FIXED (removed selectedId dependency)
 
   // ================= MOBILE =================
   if (isMobile) {
@@ -158,6 +182,7 @@ export function ChatPage() {
         <ChatSection
           applicationId={selectedId}
           onBack={() => setSelectedId(null)}
+          role={role === 'poster' ? 'poster' : 'job_seeker'}
         />
       )
     }
@@ -177,8 +202,6 @@ export function ChatPage() {
   // ================= DESKTOP =================
   return (
     <View className="flex-1 flex-row bg-white dark:bg-neutral-900">
-
-      {/* SIDEBAR */}
       <View className="w-80 border-r border-neutral-200 dark:border-neutral-800">
         <Sidebar
           activeChats={activeChats}
@@ -190,10 +213,12 @@ export function ChatPage() {
         />
       </View>
 
-      {/* CHAT */}
       <View className="flex-1">
         {selectedId ? (
-          <ChatSection applicationId={selectedId} />
+          <ChatSection
+            applicationId={selectedId}
+            role={role === 'poster' ? 'poster' : 'job_seeker'}
+          />
         ) : (
           <View className="flex-1 items-center justify-center">
             <Text className="text-neutral-500">
