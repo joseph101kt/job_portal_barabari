@@ -1,5 +1,5 @@
 [build]
-  command = "yarn install && npx expo export --platform web && cp public/_redirects dist/server/_redirects"
+  command = "yarn install && npx expo export --platform web"
   publish = "dist/server"
 
 [build.environment]
