@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
@@ -5,6 +6,7 @@ import {
   PageLayout, Input, Button, Toggle,
   StepIndicator, FormSection, Chip,
   Toast,
+  DateInput,
 } from '@my-app/ui'
 import {
   createListing, getSupabase,
@@ -16,14 +18,14 @@ import {
 // ✅ ONLY 2 STEPS
 const STEPS = ['Job details', 'Compensation']
 
-const EMPLOYMENT_TYPES: { label: string; value: EmploymentType }[] = [
+const EMPLOYMENT_TYPES = [
   { label: 'Full-time', value: 'full_time' },
   { label: 'Internship', value: 'internship' },
   { label: 'Part-time', value: 'part_time' },
   { label: 'Contract', value: 'contract' },
 ]
 
-const EXPERIENCE_LEVELS: { label: string; value: ExperienceLevel }[] = [
+const EXPERIENCE_LEVELS = [
   { label: 'Fresher', value: 'fresher' },
   { label: 'Junior', value: 'junior' },
   { label: 'Mid-level', value: 'mid' },
@@ -37,35 +39,48 @@ function StepJobDetails({
   description, setDescription,
 }: any) {
   return (
-    <FormSection title="Job Details">
-      <Input
-        label="Job title *"
-        placeholder="e.g. Frontend Engineer"
-        value={title}
-        onChangeText={setTitle}
-      />
-      <Stack.Screen options={{ title: 'Create-Job' }} />
-      <View className="gap-2">
-        <Text className="text-sm font-medium">Employment type *</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {EMPLOYMENT_TYPES.map(t => (
-            <Chip
-              key={t.value}
-              label={t.label}
-              selected={empType === t.value}
-              onPress={() => setEmpType(t.value)}
-            />
-          ))}
+    <FormSection title="">
+      <View className="bg-white dark:bg-neutral-900 rounded-2xl p-5 border border-neutral-200 dark:border-neutral-800 shadow-sm gap-4">
+        <Stack.Screen options={{ title: 'Create-Job' }} />
+
+        <Text className="text-lg font-semibold text-neutral-900 dark:text-white">
+          Job Details
+        </Text>
+
+        <View className="gap-4">
+          <Input
+            label="Job title *"
+            placeholder="e.g. Frontend Engineer"
+            value={title}
+            onChangeText={setTitle}
+          />
+
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              Employment type *
+            </Text>
+            <View className="flex-row flex-wrap gap-2 mt-1">
+              {EMPLOYMENT_TYPES.map(t => (
+                <Chip
+                  key={t.value}
+                  label={t.label}
+                  selected={empType === t.value}
+                  onPress={() => setEmpType(t.value)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <Input
+            label="Job description *"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={6}
+            className="min-h-[120px]"
+          />
         </View>
       </View>
-
-      <Input
-        label="Job description *"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={8}
-      />
     </FormSection>
   )
 }
@@ -80,53 +95,67 @@ function StepCompensation({
   deadline, setDeadline,
 }: any) {
   return (
-    <FormSection title="Compensation & Requirements">
-      <View className="gap-2">
-        <Text className="text-sm font-medium">Experience level</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {EXPERIENCE_LEVELS.map(l => (
-            <Chip
-              key={l.value}
-              label={l.label}
-              selected={expLevel === l.value}
-              onPress={() => setExpLevel(l.value)}
-            />
-          ))}
+    <FormSection title="">
+      <View className="bg-white dark:bg-neutral-900 rounded-2xl p-5 border border-neutral-200 dark:border-neutral-800 shadow-sm gap-4">
+        <Text className="text-lg font-semibold text-neutral-900 dark:text-white">
+          Compensation & Requirements
+        </Text>
+
+        <View className="gap-4">
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              Experience level
+            </Text>
+            <View className="flex-row flex-wrap gap-2 mt-1">
+              {EXPERIENCE_LEVELS.map(l => (
+                <Chip
+                  key={l.value}
+                  label={l.label}
+                  selected={expLevel === l.value}
+                  onPress={() => setExpLevel(l.value)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <Input
+            label="Location"
+            value={location}
+            onChangeText={setLocation}
+          />
+
+          <Toggle
+            label="Remote"
+            value={isRemote}
+            onToggle={setIsRemote}
+          />
+
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Input
+                label="Min salary"
+                value={salaryMin}
+                onChangeText={setSalaryMin}
+                keyboardType="numeric"
+              />
+            </View>
+            <View className="flex-1">
+              <Input
+                label="Max salary"
+                value={salaryMax}
+                onChangeText={setSalaryMax}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+<DateInput
+  label="Application deadline"
+  value={deadline}
+  onChange={setDeadline}
+/>
         </View>
       </View>
-
-      <Input
-        label="Location"
-        value={location}
-        onChangeText={setLocation}
-      />
-
-      <Toggle
-        label="Remote"
-        value={isRemote}
-        onToggle={setIsRemote}
-      />
-
-      <Input
-        label="Min salary"
-        value={salaryMin}
-        onChangeText={setSalaryMin}
-        keyboardType="numeric"
-      />
-
-      <Input
-        label="Max salary"
-        value={salaryMax}
-        onChangeText={setSalaryMax}
-        keyboardType="numeric"
-      />
-
-      <Input
-        label="Application deadline"
-        value={deadline}
-        onChangeText={setDeadline}
-        placeholder="YYYY-MM-DD"
-      />
     </FormSection>
   )
 }
@@ -138,7 +167,6 @@ export default function CreateJobScreen() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
 
-  // Form state
   const [title, setTitle] = useState('')
   const [empType, setEmpType] = useState<EmploymentType | null>(null)
   const [expLevel, setExpLevel] = useState<ExperienceLevel | null>(null)
@@ -160,8 +188,6 @@ export default function CreateJobScreen() {
     console.log('🚀 Publishing job...')
 
     const { data: { user } } = await getSupabase().auth.getUser()
-    console.log('👤 User:', user)
-
     if (!user) {
       Toast.showError('User not authenticated')
       return
@@ -172,8 +198,6 @@ export default function CreateJobScreen() {
       .select('id')
       .eq('id', user.id)
       .single()
-
-    console.log('📄 Poster:', poster)
 
     if (!poster) {
       Toast.showError('Poster profile not found')
@@ -196,40 +220,23 @@ export default function CreateJobScreen() {
     setSaving(true)
 
     try {
-      const status: ListingStatus = 'open'
-
-      function toNullableNumber(val: string): number | null {
-        if (!val) return null
-        const num = Number(val)
-        return isNaN(num) ? null : num
-      }
-
       const payload = {
         poster_id: poster.id,
         title: title.trim(),
         description: description.trim() || null,
-
         employment_type: empType ?? null,
         experience_level: expLevel ?? null,
-
         location: location.trim() || null,
         is_remote: isRemote,
-
-        salary_min: toNullableNumber(salaryMin),
-        salary_max: toNullableNumber(salaryMax),
-
+        salary_min: salaryMin ? Number(salaryMin) : null,
+        salary_max: salaryMax ? Number(salaryMax) : null,
         application_deadline: deadline
           ? new Date(deadline).toISOString()
           : null,
-
-        status,
+        status: 'open' as ListingStatus,
       }
 
-      console.log('📦 Payload:', payload)
-
       const listing = await createListing(payload)
-
-      console.log('✅ Listing:', listing)
 
       if (!listing) {
         Toast.showError('Failed to create job')
@@ -239,9 +246,8 @@ export default function CreateJobScreen() {
 
       Toast.showSuccess('Job posted successfully')
       router.replace('/poster/dashboard')
-
     } catch (err) {
-      console.error('❌ Publish error:', err)
+      console.error(err)
       Toast.showError('Something went wrong')
       setSaving(false)
       return
@@ -257,16 +263,16 @@ export default function CreateJobScreen() {
         left: (
           <Pressable
             onPress={() => step > 0 ? setStep(s => s - 1) : router.back()}
-            className="w-9 h-9 items-center justify-center rounded-xl bg-neutral-100"
+            className="w-10 h-10 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800"
           >
-            <Text className="text-neutral-600">‹</Text>
+            <Text className="text-neutral-700 dark:text-neutral-300">‹</Text>
           </Pressable>
         ),
       }}
       noScroll
       noPad
     >
-      <ScrollView contentContainerClassName="px-5 pt-4 pb-8 gap-6">
+      <ScrollView contentContainerClassName="px-5 pt-6 pb-28 gap-6 bg-neutral-50 dark:bg-black">
         <StepIndicator steps={STEPS} current={step} />
 
         {step === 0 && (
@@ -296,40 +302,33 @@ export default function CreateJobScreen() {
             setDeadline={setDeadline}
           />
         )}
-
-        <View className="flex-row gap-3 pt-2">
-          {step < STEPS.length - 1 ? (
-            <Button
-              label="Continue"
-              fullWidth
-              disabled={!canAdvance()}
-              onPress={() => setStep(s => s + 1)}
-            />
-          ) : (
-            <Button
-              label="Publish job"
-              fullWidth
-              loading={saving}
-              onPress={handlePublish}
-            />
-          )}
-        </View>
       </ScrollView>
+
+      {/* Sticky CTA */}
+      <View className="px-5 pb-6 pt-3 bg-white dark:bg-black border-t border-neutral-200 dark:border-neutral-800">
+        {step < STEPS.length - 1 ? (
+          <Button
+            label="Continue"
+            fullWidth
+            disabled={!canAdvance()}
+            onPress={() => setStep(s => s + 1)}
+          />
+        ) : (
+          <Button
+            label="Publish job"
+            fullWidth
+            loading={saving}
+            onPress={handlePublish}
+          />
+        )}
+      </View>
     </PageLayout>
   )
 }
 
 // ───────────────── VALIDATION ─────────────────
 
-type ValidateJobInput = {
-  title: string
-  description: string
-  empType: string | null
-  salaryMin: string
-  salaryMax: string
-}
-
-export function validateJob(data: ValidateJobInput): string | null {
+export function validateJob(data: any): string | null {
   if (!data.title.trim()) return 'Job title is required'
   if (!data.empType) return 'Select employment type'
   if (!data.description.trim()) return 'Description is required'
@@ -344,3 +343,4 @@ export function validateJob(data: ValidateJobInput): string | null {
 
   return null
 }
+
