@@ -180,7 +180,7 @@ export default function PosterDashboardScreen() {
                   <View className="flex-row border-t border-neutral-100 dark:border-neutral-700">
                     <Pressable
                       onPress={() => router.push({ pathname: '/poster/job-applicants', params: { id: listing.id } })}
-                      className="flex-1 py-2.5 items-center active:bg-neutral-50"
+                      className="flex-1 py-2.5 items-center"
                     >
                       <Text className="text-sm font-medium text-primary-600">View applicants</Text>
                     </Pressable>

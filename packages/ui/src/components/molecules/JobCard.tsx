@@ -110,7 +110,7 @@ export function JobCard({
           {onSave && (
             <Pressable
               onPress={onSave}
-              className="flex-1 py-3 items-center active:bg-neutral-50"
+              className="flex-1 py-3 items-center "
             >
               <Text className={`text-sm font-medium ${isSaved ? 'text-primary-600' : 'text-neutral-500'}`}>
                 {isSaved ? '🔖 Saved' : '🔖 Save'}
@@ -123,7 +123,7 @@ export function JobCard({
           {onApply && (
             <Pressable
               onPress={onApply}
-              className="flex-1 py-3 items-center active:bg-primary-50"
+              className="flex-1 py-3 items-center"
             >
               <Text className="text-sm font-semibold text-primary-600">View Details</Text>
             </Pressable>

@@ -77,7 +77,7 @@ export function ApplicantCard({
       {/* MAIN CLICK AREA */}
       <Pressable
         onPress={handleToggle}
-        className="p-4 active:bg-neutral-50 dark:active:bg-neutral-700"
+        className="p-4"
       >
         <View className="flex-row items-start gap-3">
           <Avatar uri={avatarUri} name={name} size="md" />

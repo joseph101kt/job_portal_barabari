@@ -6,7 +6,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import {
   PageLayout, Badge, Tag, Button,
-  Card, Avatar, Divider,
+  Card, Avatar,
   Input, SectionHeader,
   Toast,
 } from '@my-app/ui'
@@ -14,8 +14,6 @@ import {
   getListingById, applyToJob, hasApplied,
   getSupabase, type JobListing,
 } from '@my-app/supabase'
-
-// ───────────────── APPLY MODAL ─────────────────
 
 function ApplyModal({
   visible,
@@ -33,26 +31,29 @@ function ApplyModal({
       <View className="flex-1 bg-black/40 justify-end">
         <View className="bg-white dark:bg-neutral-900 rounded-t-3xl p-5 gap-5">
 
-          {/* Header */}
           <View className="flex-row justify-between items-center">
-            <Text className="text-lg font-semibold">Apply</Text>
+            <Text className="text-lg font-semibold text-neutral-900 dark:text-white">
+              Apply
+            </Text>
             <Pressable onPress={onClose}>
               <Text className="text-neutral-400 text-lg">✕</Text>
             </Pressable>
           </View>
 
-          {/* Job preview */}
           <Card elevation="flat">
             <View className="flex-row items-center gap-3">
               <Avatar name={job.poster?.company ?? ''} size="sm" />
               <View>
-                <Text className="text-sm font-semibold">{job.title}</Text>
-                <Text className="text-xs text-neutral-400">{job.poster?.company}</Text>
+                <Text className="text-sm font-semibold text-neutral-900 dark:text-white">
+                  {job.title}
+                </Text>
+                <Text className="text-xs text-neutral-400">
+                  {job.poster?.company}
+                </Text>
               </View>
             </View>
           </Card>
 
-          {/* Input */}
           <Input
             label="Cover letter"
             placeholder="Why are you a great fit?"
@@ -63,7 +64,6 @@ function ApplyModal({
             style={{ minHeight: 100, textAlignVertical: 'top' }}
           />
 
-          {/* Action */}
           <Button
             label={submitting ? 'Submitting…' : 'Submit application'}
             loading={submitting}
@@ -80,16 +80,20 @@ function ApplyModal({
   )
 }
 
-// ───────────────── JOB HEADER ─────────────────
-
 function JobHeader({ job }: { job: JobListing }) {
   return (
-    <View className="bg-white dark:bg-neutral-800 px-5 pt-4 pb-5 gap-4">
+    <View className="bg-white dark:bg-neutral-900 px-5 pt-5 pb-5 gap-4">
+
       <View className="flex-row gap-4 items-start">
         <Avatar name={job.poster?.company ?? ''} size="lg" />
+
         <View className="flex-1 gap-1">
-          <Text className="text-2xl font-bold">{job.title}</Text>
-          <Text className="text-base text-neutral-500">{job.poster?.company}</Text>
+          <Text className="text-xl font-bold text-neutral-900 dark:text-white">
+            {job.title}
+          </Text>
+          <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+            {job.poster?.company}
+          </Text>
         </View>
       </View>
 
@@ -105,8 +109,6 @@ function JobHeader({ job }: { job: JobListing }) {
     </View>
   )
 }
-
-// ───────────────── MAIN SCREEN ─────────────────
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -145,7 +147,6 @@ export default function JobDetailScreen() {
 
   async function handleApply() {
     const { data: { user } } = await getSupabase().auth.getUser()
-
     if (!user || !job) return
 
     setSubmitting(true)
@@ -186,36 +187,42 @@ export default function JobDetailScreen() {
     <>
       <PageLayout
         header={{
-          title: job.title,
+          title: '',
           left: (
             <Pressable onPress={() => router.back()}>
-              <Text>‹</Text>
+              <Text className="text-neutral-700 dark:text-neutral-200 text-lg">‹</Text>
             </Pressable>
           ),
         }}
         footer={
           applied ? (
-            <Text className="text-center text-neutral-500">✓ Already applied</Text>
+            <Text className="text-center text-neutral-500 dark:text-neutral-400">
+              ✓ Already applied
+            </Text>
           ) : (
             <Button label="Apply now" fullWidth onPress={() => setApplyOpen(true)} />
           )
         }
       >
-        <ScrollView>
+        <ScrollView showsVerticalScrollIndicator={false}>
+
           <JobHeader job={job} />
 
-          <Divider />
+          <View className="h-2 bg-neutral-100 dark:bg-neutral-800" />
 
-          <View className="px-5 py-5 gap-6">
+          <View className="px-5 py-6 gap-7">
+
             {job.description && (
-              <View>
+              <View className="gap-2">
                 <SectionHeader title="About this role" />
-                <Text>{job.description}</Text>
+                <Text className="text-neutral-700 dark:text-neutral-300 leading-6">
+                  {job.description}
+                </Text>
               </View>
             )}
 
             {requiredSkills.length > 0 && (
-              <View>
+              <View className="gap-3">
                 <SectionHeader title="Required skills" />
                 <View className="flex-row flex-wrap gap-2">
                   {requiredSkills.map(s => (
@@ -226,7 +233,7 @@ export default function JobDetailScreen() {
             )}
 
             {optionalSkills.length > 0 && (
-              <View>
+              <View className="gap-3">
                 <SectionHeader title="Nice to have" />
                 <View className="flex-row flex-wrap gap-2">
                   {optionalSkills.map(s => (
@@ -235,6 +242,7 @@ export default function JobDetailScreen() {
                 </View>
               </View>
             )}
+
           </View>
         </ScrollView>
       </PageLayout>

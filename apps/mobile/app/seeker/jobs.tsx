@@ -1,6 +1,6 @@
 // apps/mobile/app/seeker/jobs.tsx
 import React, { useEffect, useState, useCallback } from 'react'
-import { View, FlatList, RefreshControl } from 'react-native'
+import { View, FlatList, RefreshControl, Text } from 'react-native'
 import { useRouter } from 'expo-router'
 import {
   PageLayout, SearchBar, FilterChips,
@@ -98,27 +98,42 @@ export default function JobsScreen() {
   return (
     <PageLayout noScroll noPad>
       {/* Sticky header */}
-      <View className="bg-neutral-50 dark:bg-neutral-900 pt-4 pb-2 gap-3">
-        <View className="px-5">
-          <SearchBar
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search jobs, companies, skills…"
-          />
-        </View>
-        <FilterChips
-          options={FILTER_OPTIONS}
-          selected={activeFilters}
-          onToggle={toggleFilter}
-        />
-      </View>
+<View className="bg-neutral-50 dark:bg-neutral-900 pt-5 pb-3 gap-4">
+  {/* Title */}
+  <View className="px-5">
+    <Text className="text-2xl font-bold text-neutral-900 dark:text-white">
+      Find Jobs
+    </Text>
+    <Text className="text-sm text-neutral-400 mt-1">
+      Discover opportunities tailored for you
+    </Text>
+  </View>
 
-      <Divider />
+  {/* Search */}
+  <View className="px-5">
+    <SearchBar
+      value={search}
+      onChangeText={setSearch}
+      placeholder="Search jobs, companies, skills…"
+    />
+  </View>
+
+  {/* Filters (more breathing space) */}
+  <View className="pb-1">
+    <FilterChips
+      options={FILTER_OPTIONS}
+      selected={activeFilters}
+      onToggle={toggleFilter}
+    />
+  </View>
+</View>
+
+      <View className="h-2 bg-neutral-100 dark:bg-neutral-800" />
 
       <FlatList
         data={filtered}
         keyExtractor={item => item.id}
-        contentContainerClassName="gap-3 px-5 pt-3 pb-24"
+        contentContainerClassName="gap-4 px-5 pt-4 pb-28"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -145,15 +160,21 @@ export default function JobsScreen() {
         )}
         ListEmptyComponent={
           loading ? null : (
-            <EmptyState
-              emoji="🔍"
-              title="No jobs found"
-              description={search ? `No results for "${search}". Try different keywords.` : "Check back later for new opportunities."}
-              action={activeFilters.length > 0 ? {
-                label: 'Clear filters',
-                onPress: () => { setActiveFilters([]); setSearch('') },
-              } : undefined}
-            />
+            <View className="flex-1 justify-center items-center mt-20 px-6">
+              <EmptyState
+                emoji="🔍"
+                title="No jobs found"
+                description={
+                  search
+                    ? `No results for "${search}". Try different keywords.`
+                    : "Check back later for new opportunities."
+                }
+                action={activeFilters.length > 0 ? {
+                  label: 'Clear filters',
+                  onPress: () => { setActiveFilters([]); setSearch('') },
+                } : undefined}
+              />
+            </View>
           )
         }
       />
