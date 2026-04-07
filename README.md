@@ -89,9 +89,9 @@ Used for:
 
 ## 🧪 Run Locally
 
-pnpm install  
-pnpm dev  
-
+yarn install  
+cd apps/mobile 
+npx expo start
 ---
 
 ## 🔐 Environment Variables

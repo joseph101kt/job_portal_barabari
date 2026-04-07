@@ -9,6 +9,9 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "build:web": "cd apps/mobile && npx expo export --platform web"
+  },
   "dependencies": {
     "lucide-react": "^1.7.0",
     "mammoth": "^1.12.0",
