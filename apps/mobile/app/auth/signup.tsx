@@ -20,7 +20,7 @@
  * - @my-app/ui (Button, Input, Toast)
  */
 
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { View, Text, Pressable } from 'react-native'
 import { Button, Input, Toast } from '@my-app/ui'
@@ -109,6 +109,7 @@ export default function SignupScreen() {
   // ─────────────────────────────────────────────
   return (
     <View className="flex-1 justify-center px-6 bg-white">
+      <Stack.Screen options={{ title: 'SignUp' }} />
       {/* Header */}
       <Text className="text-3xl font-bold text-gray-900 mb-2">
         Create account

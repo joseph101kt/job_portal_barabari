@@ -1,68 +1,65 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Job Portal",
+    "slug": "job-portal",
     "scheme": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+
     "icon": "./assets/icon.png",
+
     "userInterfaceStyle": "light",
+
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+
     "ios": {
       "supportsTablet": true,
       "bitcode": false
     },
+
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false,
+      "package": "com.joseph.jobportal",
+
       "permissions": [
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.CAMERA",
         "android.permission.INTERNET",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.RECORD_AUDIO",
-        "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.WAKE_LOCK",
         "android.permission.BLUETOOTH"
-      ],
-      "package": "com.joseph_k.mobile"
+      ]
     },
+
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/icon.png",
       "bundler": "metro",
       "output": "server"
     },
+
     "plugins": [
-      [
-        "@livekit/react-native-expo-plugin"
-      ],
-      [
-        "@config-plugins/react-native-webrtc"
-      ],
+      ["@livekit/react-native-expo-plugin"],
+      ["@config-plugins/react-native-webrtc"],
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to use your camera for video calls."
+          "cameraPermission": "Allow Job Portal to use your camera for video calls."
         }
       ],
       [
         "expo-av",
         {
-          "microphonePermission": "Allow $(PRODUCT_NAME) to use your microphone for calls."
+          "microphonePermission": "Allow Job Portal to use your microphone for calls."
         }
       ],
       "expo-router",
       "expo-font"
     ],
+
     "extra": {
       "router": {},
       "eas": {

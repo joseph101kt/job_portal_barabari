@@ -1,7 +1,7 @@
 // apps/mobile/app/seeker/jobs.tsx
 import React, { useEffect, useState, useCallback } from 'react'
 import { View, FlatList, RefreshControl, Text } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import {
   PageLayout, SearchBar, FilterChips,
   JobCard, EmptyState, Divider,
@@ -97,6 +97,7 @@ export default function JobsScreen() {
 
   return (
     <PageLayout noScroll noPad>
+      <Stack.Screen options={{ title: 'Jobs' }} />
       {/* Sticky header */}
 <View className="bg-neutral-50 dark:bg-neutral-900 pt-5 pb-3 gap-4">
   {/* Title */}

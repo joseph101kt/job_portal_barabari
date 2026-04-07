@@ -10,6 +10,7 @@ import {
   getSupabase,
   type Profile, type JobPoster,
 } from '@my-app/supabase'
+import { Stack } from 'expo-router'
 
 // ───────────────── PROFILE VIEW ─────────────────
 
@@ -24,6 +25,7 @@ function PosterProfileView({ profile, poster, onEdit, onSignOut }: any) {
         isOwn
         onEdit={onEdit}
       />
+      <Stack.Screen options={{ title: 'Profile' }} />
 
       <Divider />
 

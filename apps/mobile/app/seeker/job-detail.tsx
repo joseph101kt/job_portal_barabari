@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, Pressable,
   ActivityIndicator, Modal,
 } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import {
   PageLayout, Badge, Tag, Button,
   Card, Avatar,
@@ -204,6 +204,7 @@ export default function JobDetailScreen() {
           )
         }
       >
+        <Stack.Screen options={{ title: job.title}} />
         <ScrollView showsVerticalScrollIndicator={false}>
 
           <JobHeader job={job} />

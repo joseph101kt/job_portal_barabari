@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import {
   PageLayout, Input, Button, Toggle,
   StepIndicator, FormSection, Chip,
@@ -44,7 +44,7 @@ function StepJobDetails({
         value={title}
         onChangeText={setTitle}
       />
-
+      <Stack.Screen options={{ title: 'Create-Job' }} />
       <View className="gap-2">
         <Text className="text-sm font-medium">Employment type *</Text>
         <View className="flex-row flex-wrap gap-2">

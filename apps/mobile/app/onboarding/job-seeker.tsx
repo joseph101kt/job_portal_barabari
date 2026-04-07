@@ -1,6 +1,6 @@
 // apps/mobile/app/onboarding/job-seeker.tsx
 
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import React, { useState, useEffect } from 'react'
 import {
   View,
@@ -160,6 +160,7 @@ export default function JobSeekerOnboarding() {
       className="flex-1 bg-white dark:bg-black"
       contentContainerClassName="px-6 py-12"
     >
+      <Stack.Screen options={{ title: 'Onboarding' }} />
       <Text className="text-3xl font-bold text-gray-900 mb-2 dark:text-white">
         Set up your profile
       </Text>

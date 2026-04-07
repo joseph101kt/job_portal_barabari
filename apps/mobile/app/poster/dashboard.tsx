@@ -4,7 +4,7 @@ import {
   View, Text, FlatList, Pressable,
   RefreshControl, ScrollView, Alert,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import {
   PageLayout, StatCard, Card, Badge, SectionHeader,
   Button, EmptyState, Avatar, Divider,
@@ -81,6 +81,7 @@ export default function PosterDashboardScreen() {
       }}
       noScroll noPad
     >
+      <Stack.Screen options={{ title: 'Dashboard' }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}

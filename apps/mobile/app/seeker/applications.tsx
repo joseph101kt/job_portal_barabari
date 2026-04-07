@@ -1,7 +1,7 @@
 // apps/mobile/app/seeker/applications.tsx
 import React, { useEffect, useState, useCallback } from 'react'
 import { View, Text, FlatList, Pressable, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import {
   PageLayout, Card, Badge, Avatar,
   EmptyState, Divider,
@@ -62,6 +62,7 @@ export default function ApplicationsScreen() {
 
   return (
     <PageLayout header={{ title: 'My Applications' }} noScroll noPad>
+      <Stack.Screen options={{ title: 'Applications' }} />
       {/* Tab bar */}
       <View className="bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800">
         <FlatList

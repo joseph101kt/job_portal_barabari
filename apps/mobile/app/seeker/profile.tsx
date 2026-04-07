@@ -15,6 +15,7 @@ import {
   syncUserSkills
 } from '@my-app/supabase'
 import { ResumeUploadButton } from '@my-app/features'
+import { Stack } from 'expo-router'
 
 // ───────────── HELPERS ─────────────
 
@@ -43,6 +44,7 @@ function ProfileView({ profile, seeker, resume, onEdit, userId, onRefresh, onSig
         isOwn
         onEdit={onEdit}
       />
+      <Stack.Screen options={{ title: 'Profile' }} />
 
       <Divider />
 

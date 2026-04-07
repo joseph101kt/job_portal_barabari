@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import {
   View, Text, FlatList, Pressable, RefreshControl,
 } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import {
   PageLayout, ApplicantCard, EmptyState, Toast,
 } from '@my-app/ui'
@@ -222,6 +222,8 @@ export default function JobApplicantsScreen() {
       noScroll
       noPad
     >
+      <Stack.Screen options={{ title: 'Applicants' }} />
+
 
       {/* Tabs */}
       <View className="px-5 pt-2 pb-2">

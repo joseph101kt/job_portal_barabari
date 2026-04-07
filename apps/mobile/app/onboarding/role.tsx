@@ -24,7 +24,7 @@
  * - @my-app/ui (Button, Toast)
  */
 
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { View, Text, Pressable } from 'react-native'
 import { Button, Toast } from '@my-app/ui'
@@ -96,6 +96,7 @@ export default function RolePickerScreen() {
   // ─────────────────────────────────────────────
   return (
     <View className="flex-1 justify-center px-6 bg-white">
+      <Stack.Screen options={{ title: 'Onboarding' }} />
       {/* Header */}
       <Text className="text-3xl font-bold text-gray-900 mb-2">
         One quick thing

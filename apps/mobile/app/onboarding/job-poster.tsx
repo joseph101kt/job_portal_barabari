@@ -1,6 +1,6 @@
 // apps/mobile/app/onboarding/job-poster.tsx
 
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { View, Text, ScrollView } from 'react-native'
 import { Button, Input, Toast } from '@my-app/ui'
@@ -121,6 +121,7 @@ setTimeout(() => {
       className="flex-1 bg-white dark:bg-neutral-900"
       contentContainerClassName="px-6 py-12"
     >
+      <Stack.Screen options={{ title: 'Onboarding' }} />
       {/* Header */}
       <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
         Set up your company

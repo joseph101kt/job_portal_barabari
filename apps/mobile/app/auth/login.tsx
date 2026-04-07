@@ -24,6 +24,8 @@ import React, { useState } from 'react'
 import { View, Text, Pressable } from 'react-native'
 import { Button, Input, Toast } from '@my-app/ui'
 import { supabase } from '@my-app/supabase'
+import { Stack } from 'expo-router'
+
 
 export default function LoginScreen() {
   const router = useRouter()
@@ -128,6 +130,7 @@ export default function LoginScreen() {
   // ─────────────────────────────────────────────
   return (
     <View className="flex-1 justify-center px-6 bg-white">
+      <Stack.Screen options={{ title: 'Login' }} />
       {/* Header */}
       <Text className="text-3xl font-bold text-gray-900 mb-2">
         Welcome back
