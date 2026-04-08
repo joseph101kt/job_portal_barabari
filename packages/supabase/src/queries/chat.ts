@@ -206,11 +206,11 @@ export async function getMyChats(
   for (const app of filteredApps) {
     console.log('🔍 processing app:', app.id)
 
-const job = (app.job as any)?.[0] as {
-  id: string
-  title: string
-  poster_id: string
-} | undefined
+    const job = app.job as {
+      id: string
+      title: string
+      poster_id: string
+    } | null
 
     const seekerProfile = seekerMap.get(app.user_id)
     const posterProfile = posterMap.get(job?.poster_id ?? '')

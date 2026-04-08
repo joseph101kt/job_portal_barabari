@@ -25,6 +25,7 @@ import { View, Text, Pressable } from 'react-native'
 import { Button, Input, Toast } from '@my-app/ui'
 import { supabase } from '@my-app/supabase'
 import { Stack } from 'expo-router'
+import { userInfo } from 'node:os'
 
 
 export default function LoginScreen() {
@@ -104,8 +105,7 @@ export default function LoginScreen() {
 
     setLoading(false)
 
-
-    router.replace('/onboarding/role')
+    router.replace('/')
   }
 
 
