@@ -206,7 +206,7 @@ export async function getMyChats(
   for (const app of filteredApps) {
     console.log('🔍 processing app:', app.id)
 
-    const job = app.job as {
+    const job = app.job as unknown as {
       id: string
       title: string
       poster_id: string

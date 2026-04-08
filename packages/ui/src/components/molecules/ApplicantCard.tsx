@@ -210,35 +210,41 @@ export function ApplicantCard({
   </View>
 )}
 
-      {/* ACTIONS */}
-      {(onShortlist || onReject || onHire) && status === 'applied' && (
-        <View className="flex-row gap-2 px-4 pb-3">
-          {onShortlist && (
-            <Button
-              label="Shortlist"
-              variant="secondary"
-              size="sm"
-              onPress={onShortlist}
-            />
-          )}
-          {onReject && (
-            <Button
-              label="Reject"
-              variant="danger"
-              size="sm"
-              onPress={onReject}
-            />
-          )}
-          {onHire && (
-            <Button
-              label="Hire"
-              variant="success"
-              size="sm"
-              onPress={onHire}
-            />
-          )}
-        </View>
-      )}
+{/* ACTIONS */}
+
+{/* APPLIED → Shortlist + Reject */}
+{status === 'applied' && (onShortlist || onReject) && (
+  <View className="flex-row gap-2 px-4 pb-3">
+    {onShortlist && (
+      <Button
+        label="Shortlist"
+        variant="secondary"
+        size="sm"
+        onPress={onShortlist}
+      />
+    )}
+    {onReject && (
+      <Button
+        label="Reject"
+        variant="danger"
+        size="sm"
+        onPress={onReject}
+      />
+    )}
+  </View>
+)}
+
+{/* SHORTLISTED → Hire */}
+{status === 'shortlisted' && onHire && (
+  <View className="flex-row gap-2 px-4 pb-3">
+    <Button
+      label="Hire"
+      variant="success"
+      size="sm"
+      onPress={onHire}
+    />
+  </View>
+)}
       {/* START CHAT */}
       {onStartChat && (
         <View className="px-4 pb-3">
