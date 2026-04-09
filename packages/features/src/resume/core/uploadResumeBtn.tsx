@@ -40,6 +40,11 @@ export function ResumeUploadButton({
   onError,
   showStatus = false,
 }: Props) {
+  console.log('[ResumeUploadButton] was clicked')
+  console.log('[ResumeUploadButton props]', {
+    userId,
+    hasResume,
+  })
   const doc = useDocument()
 
   const { pickAndExtract, pdfWebviewRef, pendingDocRef } =

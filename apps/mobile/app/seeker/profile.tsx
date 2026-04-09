@@ -396,11 +396,15 @@ export default function SeekerProfileScreen() {
   const [resume, setResume] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'profile' | 'edit'>('profile')
-
+  const [user, setUser] = useState<any>(null)
   const load = useCallback(async () => {
     const { data: { user } } = await getSupabase().auth.getUser()
-    if (!user) return
-
+    if (!user)
+      { 
+        console.log('❌ No user found')
+        return     
+      }
+    setUser(user)
     const [p, full] = await Promise.all([
       getProfile(user.id),
       getFullResume(user.id),
@@ -452,6 +456,7 @@ export default function SeekerProfileScreen() {
             profile={profile}
             seeker={seeker}
             resume={resume}
+            userId={user?.id}
             onEdit={() => setMode('edit')}
             onRefresh={load}
             onSignOut={handleSignOut}
