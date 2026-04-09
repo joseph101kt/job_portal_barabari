@@ -4,45 +4,27 @@ import { Platform, View, Text, Pressable } from 'react-native'
 
 type Props = {
   label: string
+  id: string                               // ← unique id to avoid DOM collisions
   value?: string | null
   onChange: (date: string | null) => void
 }
 
-// ───────────── HELPERS ─────────────
-
 function formatDisplay(date?: string | null) {
   if (!date) return ''
-
   try {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-    })
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
   } catch {
     return ''
   }
 }
 
-// ───────────── COMPONENT ─────────────
-
-export function DateInput({ label, value, onChange }: Props) {
-  // ✅ WEB HANDLER
+export function DateInput({ label, id, value, onChange }: Props) {
   const handleWebPress = () => {
-    const input = document.getElementById(
-      `date-input-${label}`
-    ) as HTMLInputElement | null
-
+    const input = document.getElementById(id) as HTMLInputElement | null
     if (!input) return
-
-    if (input.showPicker) {
-      input.showPicker()
-    } else {
-      input.focus()
-      input.click()
-    }
+    input.showPicker ? input.showPicker() : input.click()
   }
 
-  // ───────────── WEB ─────────────
   if (Platform.OS === 'web') {
     return (
       <View className="gap-1">
@@ -59,16 +41,14 @@ export function DateInput({ label, value, onChange }: Props) {
             active:opacity-80
           "
         >
-          {/* Hidden native input */}
           <input
-            id={`date-input-${label}`}
+            id={id}                        // ← use the unique id
             type="date"
             value={value ?? ''}
             onChange={(e) => onChange(e.target.value || null)}
             className="absolute inset-0 opacity-0 cursor-pointer"
           />
 
-          {/* Visible value */}
           <Text
             className={`text-sm ${
               value
@@ -79,16 +59,12 @@ export function DateInput({ label, value, onChange }: Props) {
             {value ? formatDisplay(value) : 'Select date'}
           </Text>
 
-          {/* Icon */}
-          <Text className="absolute right-3 top-3 text-neutral-400">
-            📅
-          </Text>
+          <Text className="absolute right-3 top-3 text-neutral-400">📅</Text>
         </Pressable>
       </View>
     )
   }
 
-  // ───────────── NATIVE ─────────────
   return (
     <View className="gap-1">
       <Text className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
