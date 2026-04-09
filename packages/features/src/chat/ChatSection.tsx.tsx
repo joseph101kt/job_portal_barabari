@@ -47,6 +47,15 @@ export function ChatSection({
 
   const flatRef = useRef<FlatList>(null)
 
+  const formatTime = (iso: string) => {
+      const date = new Date(iso)
+
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    }
+
   // ================= GET USER =================
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -144,6 +153,7 @@ export function ChatSection({
       content: messageText,
       type: 'text',
     })
+
   }
 
   // ================= UI =================
@@ -206,15 +216,28 @@ export function ChatSection({
                       : 'bg-neutral-200 dark:bg-neutral-700'
                   }`}
                 >
-                  <Text
-                    className={`${
-                      isMine
-                        ? 'text-white'
-                        : 'text-black dark:text-white'
-                    }`}
-                  >
-                    {item.content}
-                  </Text>
+<View
+  className={` rounded-2xl max-w-[75%] min-w-[90px] ${
+    isMine ? 'bg-blue-500' : 'bg-neutral-200 dark:bg-neutral-700'
+  }`}
+>
+  <Text
+    className={`${
+      isMine ? 'text-white' : 'text-black dark:text-white'
+    }`}
+  >
+    {item.content}
+  </Text>
+
+  {/* TIME */}
+  <Text
+    className={`text-xs mt-1 opacity-70 ${
+      isMine ? 'text-blue-100' : 'text-neutral-500'
+    }`}
+  >
+    {formatTime(item.created_at)}
+  </Text>
+</View>
                 </View>
               </View>
             )

@@ -29,7 +29,6 @@ export { EmptyState }        from './components/molecules/EmptyState'
 export { ProgressBar }       from './components/molecules/ProgressBar'
 export { StepIndicator }     from './components/molecules/StepIndicator'
 export { ProfileCompletion } from './components/molecules/ProfileCompletion'
-export { MessageBubble }     from './components/molecules/MessageBubble'
 export { SectionHeader }     from './components/molecules/SectionHeader'
 
 // ── Organisms ─────────────────────────────────────────────────────────────────
