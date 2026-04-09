@@ -51,15 +51,34 @@ export function InterviewCard({ interviewId, role }: Props) {
       ? now >= new Date(scheduledTime.getTime() - 5 * 60 * 1000)
       : false
 
-const minutesLeft =
+const timeLeft =
   scheduledTime
-    ? Math.max(
-        0,
-        Math.ceil(
-          (scheduledTime.getTime() - now.getTime()) / (1000 * 60)
-        )
-      )
+    ? Math.max(0, scheduledTime.getTime() - now.getTime())
     : null
+
+let days = 0
+let hours = 0
+let minutes = 0
+
+if (timeLeft !== null) {
+  const totalMinutes = Math.ceil(timeLeft / (1000 * 60))
+
+  days = Math.floor(totalMinutes / (60 * 24))
+  hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+  minutes = totalMinutes % 60
+}
+
+const formatTimeLeft = () => {
+  if (timeLeft === null || timeLeft <= 0) return null
+
+  const parts = []
+
+  if (days > 0) parts.push(`${days}d`)
+  if (hours > 0) parts.push(`${hours}h`)
+  if (minutes > 0) parts.push(`${minutes}m`)
+
+  return parts.join(' ')
+}
 
   const handleJoin = async () => {
     try {
@@ -153,10 +172,10 @@ const minutesLeft =
 
       {/* COUNTDOWN */}
       {interview.status === 'scheduled' &&
-        minutesLeft !== null &&
-        minutesLeft > 0 && (
+        formatTimeLeft !== null &&
+        formatTimeLeft () && (
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
-            Starts in {minutesLeft} min
+            Starts in {formatTimeLeft()} min
           </div>
         )}
 
@@ -182,8 +201,8 @@ const minutesLeft =
               ? 'Join Now'
               : canJoin
               ? 'Join'
-              :  minutesLeft !== null && minutesLeft > 0
-                ? `Starts in ${minutesLeft} min, Please wait`
+              :  formatTimeLeft()
+                ? `Starts in ${formatTimeLeft()}, Please wait`
                 : 'Join'}
           </button>
         )}

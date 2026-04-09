@@ -24,7 +24,7 @@ export function Input({
     : 'border-neutral-200'
 
   return (
-<View className="gap-1.5 rounded-xl p-3 bg-neutral-400 dark:bg-neutral-950/20">
+<View className="gap-1.5 rounded-xl p-3 bg-neutral-100 dark:bg-neutral-950/20">
   {label && (
     <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
       {label}
