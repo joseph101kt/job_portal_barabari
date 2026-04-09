@@ -113,65 +113,67 @@ export default function LoginScreen() {
   // ─────────────────────────────────────────────
   // UI
   // ─────────────────────────────────────────────
-  return (
-    <View className="flex-1 justify-center px-6 bg-white">
-      <Stack.Screen options={{ title: 'Login' }} />
-      {/* Header */}
-      <Text className="text-3xl font-bold text-gray-900 mb-2">
-        Welcome back
-      </Text>
-      <Text className="text-base text-gray-500 mb-8">
-        Sign in to your account
-      </Text>
+return (
+  <View className="flex-1 justify-center px-6 bg-white dark:bg-black">
+    <Stack.Screen options={{ title: 'Login' }} />
 
-      <View className="gap-4">
-        {/* Email */}
-        <Input
-          label="Email"
-          placeholder="you@example.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+    {/* Header */}
+    <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      Welcome back
+    </Text>
+    <Text className="text-base text-gray-500 dark:text-gray-400 mb-8">
+      Sign in to your account
+    </Text>
 
-        {/* Password */}
-        <Input
-          label="Password"
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+    <View className="gap-4">
+      {/* Email */}
+      <Input
+        label="Email"
+        placeholder="you@example.com"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-        {/* Login Button */}
-        <Button
-          label="Sign in"
-          variant="primary"
-          onPress={handleLogin}
-          loading={loading}
-          fullWidth
-        />
+      {/* Password */}
+      <Input
+        label="Password"
+        placeholder="••••••••"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
 
-        {/* Divider */}
-        <View className="flex-row items-center gap-3 my-2">
-          <View className="flex-1 h-px bg-gray-200" />
-          <Text className="text-sm text-gray-400">or</Text>
-          <View className="flex-1 h-px bg-gray-200" />
-        </View>
+      {/* Login Button */}
+      <Button
+        label="Sign in"
+        variant="primary"
+        onPress={handleLogin}
+        loading={loading}
+        fullWidth
+      />
 
-
-        {/* Signup Redirect */}
-        <Pressable
-          onPress={() => router.push('/auth/signup')}
-          className="items-center mt-2"
-        >
-          <Text className="text-sm text-gray-500">
-            Don't have an account?{' '}
-            <Text className="text-blue-600 font-medium">Sign up</Text>
-          </Text>
-        </Pressable>
+      {/* Divider */}
+      <View className="flex-row items-center gap-3 my-2">
+        <View className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+        <Text className="text-sm text-gray-400 dark:text-gray-500">or</Text>
+        <View className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
       </View>
+
+      {/* Signup Redirect */}
+      <Pressable
+        onPress={() => router.push('/auth/signup')}
+        className="items-center mt-2"
+      >
+        <Text className="text-sm text-gray-500 dark:text-gray-400">
+          Don't have an account?{' '}
+          <Text className="text-blue-600 dark:text-blue-400 font-medium">
+            Sign up
+          </Text>
+        </Text>
+      </Pressable>
     </View>
-  )
+  </View>
+)
 }

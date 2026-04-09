@@ -1,10 +1,11 @@
-// apps/mobile/app/seeker/jobs.tsx
-import React, { useEffect, useState, useCallback } from 'react'
-import { View, FlatList, RefreshControl, Text } from 'react-native'
+'use client'
+
+import React, { useEffect, useState } from 'react'
+import { View, FlatList, RefreshControl, Text, TextInput, Pressable } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import {
   PageLayout, SearchBar, FilterChips,
-  JobCard, EmptyState, Divider,
+  JobCard, EmptyState,
 } from '@my-app/ui'
 import {
   getOpenListings, recordJobView,
@@ -20,14 +21,21 @@ const FILTER_OPTIONS = [
   { label: 'Contract',    value: 'contract' },
 ]
 
+const STEP = 5000
+
 export default function JobsScreen() {
   const router = useRouter()
-  const [jobs,      setJobs]      = useState<JobListing[]>([])
-  const [filtered,  setFiltered]  = useState<JobListing[]>([])
-  const [search,    setSearch]    = useState('')
+
+  const [jobs, setJobs] = useState<JobListing[]>([])
+  const [filtered, setFiltered] = useState<JobListing[]>([])
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [activeFilters, setActiveFilters] = useState<string[]>([])
   const [refreshing, setRefreshing] = useState(false)
-  const [loading,   setLoading]   = useState(true)
+  const [loading, setLoading] = useState(true)
+
+  const [minSalary, setMinSalary] = useState('0')
+  const [maxSalary, setMaxSalary] = useState('200000')
 
   async function load() {
     setLoading(true)
@@ -38,31 +46,91 @@ export default function JobsScreen() {
 
   useEffect(() => { load() }, [])
 
-  // Client-side filter + search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  function scoreJob(job: JobListing, q: string) {
+    let score = 0
+    const text = q.toLowerCase()
+
+    const title = job.title?.toLowerCase() ?? ''
+    const desc = job.description?.toLowerCase() ?? ''
+    const company = job.poster?.company?.toLowerCase() ?? ''
+    const location = job.location?.toLowerCase() ?? ''
+    const emp = job.employment_type?.toLowerCase() ?? ''
+    const exp = job.experience_level?.toLowerCase() ?? ''
+    const skills = job.skills?.map(s => s.name.toLowerCase()).join(' ') ?? ''
+
+    if (title.includes(text)) score += 5
+    if (company.includes(text)) score += 4
+    if (skills.includes(text)) score += 4
+    if (desc.includes(text)) score += 3
+    if (location.includes(text)) score += 2
+    if (emp.includes(text)) score += 2
+    if (exp.includes(text)) score += 2
+
+    return score
+  }
+
+  // 🔧 Helpers for increment/decrement
+  const adjustMin = (delta: number) => {
+    const val = Math.max(0, (parseInt(minSalary) || 0) + delta)
+    setMinSalary(String(val))
+  }
+
+  const adjustMax = (delta: number) => {
+    const val = Math.max(0, (parseInt(maxSalary) || 0) + delta)
+    setMaxSalary(String(val))
+  }
+
   useEffect(() => {
     let result = [...jobs]
 
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      result = result.filter(j =>
-        j.title.toLowerCase().includes(q) ||
-        j.poster?.company?.toLowerCase().includes(q) ||
-        j.location?.toLowerCase().includes(q)
-      )
+    const q = debouncedSearch.trim().toLowerCase()
+
+    const isRemoteSearch =
+      q.includes('remote') ||
+      q.includes('wfh') ||
+      q.includes('work from home')
+
+    if (q) {
+      result = result
+        .map(j => ({
+          job: j,
+          score: scoreJob(j, q),
+        }))
+        .filter(x => x.score > 0 || (isRemoteSearch && x.job.is_remote))
+        .sort((a, b) => b.score - a.score)
+        .map(x => x.job)
     }
 
     if (activeFilters.length > 0) {
       result = result.filter(j => {
         return activeFilters.every(f => {
-          if (f === 'remote')  return j.is_remote
+          if (f === 'remote') return j.is_remote
           if (f === 'fresher') return j.experience_level === 'fresher'
           return j.employment_type === f
         })
       })
     }
 
+    let min = parseInt(minSalary) || 0
+    let max = parseInt(maxSalary) || 99999999
+
+    if (min > max) [min, max] = [max, min]
+
+    result = result.filter(j => {
+      const jobMin = j.salary_min ?? 0
+      const jobMax = j.salary_max ?? 99999999
+      return jobMax >= min && jobMin <= max
+    })
+
     setFiltered(result)
-  }, [jobs, search, activeFilters])
+  }, [jobs, debouncedSearch, activeFilters, minSalary, maxSalary])
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -72,7 +140,9 @@ export default function JobsScreen() {
 
   function toggleFilter(value: string) {
     setActiveFilters(prev =>
-      prev.includes(value) ? prev.filter(f => f !== value) : [...prev, value]
+      prev.includes(value)
+        ? prev.filter(f => f !== value)
+        : [...prev, value]
     )
   }
 
@@ -82,52 +152,135 @@ export default function JobsScreen() {
   }
 
   function handleApply(job: JobListing) {
-    router.push({ pathname: '/seeker/job-detail', params: { id: job.id, apply: '1' } })
+    router.push({
+      pathname: '/seeker/job-detail',
+      params: { id: job.id, apply: '1' }
+    })
   }
 
   function relativeTime(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime()
     const h = Math.floor(diff / 3_600_000)
-    if (h < 1)  return 'Just now'
+    if (h < 1) return 'Just now'
     if (h < 24) return `${h}h ago`
     const d = Math.floor(h / 24)
-    if (d < 7)  return `${d}d ago`
+    if (d < 7) return `${d}d ago`
     return `${Math.floor(d / 7)}w ago`
   }
 
   return (
     <PageLayout noScroll noPad>
       <Stack.Screen options={{ title: 'Jobs' }} />
-      {/* Sticky header */}
-<View className="bg-neutral-50 dark:bg-neutral-900 pt-5 pb-3 gap-4">
-  {/* Title */}
-  <View className="px-5">
-    <Text className="text-2xl font-bold text-neutral-900 dark:text-white">
-      Find Jobs
-    </Text>
-    <Text className="text-sm text-neutral-400 mt-1">
-      Discover opportunities tailored for you
-    </Text>
+
+      <View className="bg-neutral-50 dark:bg-neutral-900 pt-5 pb-3 gap-4">
+
+        <View className="px-5">
+          <Text className="text-2xl font-bold text-neutral-900 dark:text-white">
+            Find Jobs
+          </Text>
+        </View>
+
+        <View className="px-5">
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search jobs, skills, companies…"
+          />
+        </View>
+
+        {/* 🔥 Combined row */}
+        <View className="flex-row items-center gap-3 px-5">
+
+          {/* Chips */}
+          <View className="flex-1">
+            <FilterChips
+              options={FILTER_OPTIONS}
+              selected={activeFilters}
+              onToggle={toggleFilter}
+            />
+          </View>
+
+{/* 💰 Compact Salary Box (Improved Buttons) */}
+<View className="flex-row items-center gap-3 px-3 py-2 rounded-xl bg-blue-50 dark:bg-neutral-800">
+
+  {/* MIN */}
+  <View className="flex-row items-center gap-1">
+
+    <Pressable
+      onPress={() => {
+        const val = Math.max(0, (parseInt(minSalary) || 0) - STEP)
+        setMinSalary(String(val))
+      }}
+      className="h-7 w-7 items-center justify-center rounded-md bg-white dark:bg-neutral-700"
+      android_ripple={{ color: '#ddd', borderless: true }}
+      style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Text selectable={false} className="text-sm font-bold dark:text-white">−</Text>
+    </Pressable>
+
+    <TextInput
+      value={minSalary}
+      onChangeText={setMinSalary}
+      keyboardType="numeric"
+      className="w-14 text-center text-sm text-black dark:text-white"
+    />
+
+    <Pressable
+      onPress={() => {
+        const val = (parseInt(minSalary) || 0) + STEP
+        setMinSalary(String(val))
+      }}
+      className="h-7 w-7 items-center justify-center rounded-md bg-white dark:bg-neutral-700"
+      android_ripple={{ color: '#ddd', borderless: true }}
+      style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Text selectable={false} className="text-sm font-bold dark:text-white">+</Text>
+    </Pressable>
+
   </View>
 
-  {/* Search */}
-  <View className="px-5">
-    <SearchBar
-      value={search}
-      onChangeText={setSearch}
-      placeholder="Search jobs, companies, skills…"
+  {/* Separator */}
+  <Text selectable={false} className="text-xs text-neutral-400">to</Text>
+
+  {/* MAX */}
+  <View className="flex-row items-center gap-1">
+
+    <Pressable
+      onPress={() => {
+        const val = Math.max(0, (parseInt(maxSalary) || 0) - STEP)
+        setMaxSalary(String(val))
+      }}
+      className="h-7 w-7 items-center justify-center rounded-md bg-white dark:bg-neutral-700"
+      android_ripple={{ color: '#ddd', borderless: true }}
+      style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Text selectable={false} className="text-sm font-bold dark:text-white">−</Text>
+    </Pressable>
+
+    <TextInput
+      value={maxSalary}
+      onChangeText={setMaxSalary}
+      keyboardType="numeric"
+      className="w-14 text-center text-sm text-black dark:text-white"
     />
+
+    <Pressable
+      onPress={() => {
+        const val = (parseInt(maxSalary) || 0) + STEP
+        setMaxSalary(String(val))
+      }}
+      className="h-7 w-7 items-center justify-center rounded-md bg-white dark:bg-neutral-700"
+      android_ripple={{ color: '#ddd', borderless: true }}
+      style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Text selectable={false} className="text-sm font-bold dark:text-white">+</Text>
+    </Pressable>
+
   </View>
 
-  {/* Filters (more breathing space) */}
-  <View className="pb-1">
-    <FilterChips
-      options={FILTER_OPTIONS}
-      selected={activeFilters}
-      onToggle={toggleFilter}
-    />
-  </View>
 </View>
+        </View>
+      </View>
 
       <View className="h-2 bg-neutral-100 dark:bg-neutral-800" />
 
@@ -151,31 +304,17 @@ export default function JobsScreen() {
             employmentType={item.employment_type as EmploymentType ?? undefined}
             skills={item.skills?.map(s => s.name) ?? []}
             postedAt={relativeTime(item.created_at)}
-            deadline={item.application_deadline
-              ? `Closes ${new Date(item.application_deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
-              : undefined}
-            isNew={Date.now() - new Date(item.created_at).getTime() < 86_400_000}
             onPress={() => handleJobPress(item)}
             onApply={() => handleApply(item)}
           />
         )}
         ListEmptyComponent={
           loading ? null : (
-            <View className="flex-1 justify-center items-center mt-20 px-6">
-              <EmptyState
-                emoji="🔍"
-                title="No jobs found"
-                description={
-                  search
-                    ? `No results for "${search}". Try different keywords.`
-                    : "Check back later for new opportunities."
-                }
-                action={activeFilters.length > 0 ? {
-                  label: 'Clear filters',
-                  onPress: () => { setActiveFilters([]); setSearch('') },
-                } : undefined}
-              />
-            </View>
+            <EmptyState
+              emoji="🔍"
+              title="No jobs found"
+              description="Try different filters"
+            />
           )
         }
       />

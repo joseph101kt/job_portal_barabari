@@ -11,16 +11,20 @@
   },
   "scripts": {
     "build:web": "cd apps/mobile && npx expo export --platform web",
-    "vercel-build": "expo export"
+    "vercel-build": "expo export",
+    "dev": "npm --workspace=apps/mobile run start"
   },
   "dependencies": {
     "@expo/server": "^0.7.5",
+    "@react-native-community/slider": "^5.2.0",
     "compression": "^1.8.1",
     "express": "^5.2.1",
     "lucide-react": "^1.7.0",
     "mammoth": "^1.12.0",
     "morgan": "^1.10.1",
     "pdfjs-dist": "^5.5.207",
+    "react-native-gesture-handler": "^2.31.0",
+    "react-native-reanimated": "^4.3.0",
     "react-native-toast-message": "^2.3.3",
     "supabase": "^2.83.0",
     "tesseract.js": "^7.0.0"

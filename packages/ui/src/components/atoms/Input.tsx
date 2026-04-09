@@ -17,11 +17,7 @@ export function Input({
 }: Props) {
   const [focused, setFocused] = useState(false)
 
-  const borderClass = error
-    ? 'border-error-500'
-    : focused
-    ? 'border-primary-400'
-    : 'border-neutral-200'
+
 
   return (
     <View className="gap-1.5">
@@ -32,9 +28,8 @@ export function Input({
       )}
 
       <View className={[
-        'flex-row items-center gap-2 px-4 rounded-xl border',
+        'flex-row items-center gap-2 px-4 rounded-xl ',
         'bg-neutral-50 dark:bg-neutral-800',
-        borderClass,
         focused ? 'bg-white dark:bg-neutral-800' : '',
         !editable ? 'opacity-60' : '',
       ].join(' ')}>

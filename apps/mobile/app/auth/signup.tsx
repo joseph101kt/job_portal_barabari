@@ -107,105 +107,60 @@ export default function SignupScreen() {
   // ─────────────────────────────────────────────
   // UI
   // ─────────────────────────────────────────────
-  return (
-    <View className="flex-1 justify-center px-6 bg-white">
-      <Stack.Screen options={{ title: 'SignUp' }} />
-      {/* Header */}
-      <Text className="text-3xl font-bold text-gray-900 mb-2">
-        Create account
-      </Text>
-      <Text className="text-base text-gray-500 mb-8">
-        Get started on your journey
-      </Text>
+return (
+  <View className="flex-1 justify-center px-6 bg-white dark:bg-black">
+    <Stack.Screen options={{ title: 'SignUp' }} />
 
-      <View className="gap-4">
-        {/* Email */}
-        <Input
-          label="Email"
-          placeholder="you@example.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+    {/* Header */}
+    <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      Create account
+    </Text>
+    <Text className="text-base text-gray-500 dark:text-gray-400 mb-8">
+      Get started on your journey
+    </Text>
 
-        {/* Password */}
-        <Input
-          label="Password"
-          placeholder="At least 6 characters"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+    <View className="gap-4">
+      {/* Email */}
+      <Input
+        label="Email"
+        placeholder="you@example.com"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-        {/* Signup Button */}
-        <Button
-          label="Create account"
-          variant="primary"
-          onPress={handleSignup}
-          loading={loading}
-          fullWidth
-        />
+      {/* Password */}
+      <Input
+        label="Password"
+        placeholder="At least 6 characters"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
 
-        {/* Login Redirect */}
-        <Pressable
-          onPress={() => router.push('/auth/login')}
-          className="items-center"
-        >
-          <Text className="text-sm text-gray-500">
-            Already have an account?{' '}
-            <Text className="text-blue-600 font-medium">Sign in</Text>
+      {/* Signup Button */}
+      <Button
+        label="Create account"
+        variant="primary"
+        onPress={handleSignup}
+        loading={loading}
+        fullWidth
+      />
+
+      {/* Login Redirect */}
+      <Pressable
+        onPress={() => router.push('/auth/login')}
+        className="items-center"
+      >
+        <Text className="text-sm text-gray-500 dark:text-gray-400">
+          Already have an account?{' '}
+          <Text className="text-blue-600 dark:text-blue-400 font-medium">
+            Sign in
           </Text>
-        </Pressable>
-      </View>
+        </Text>
+      </Pressable>
     </View>
-  )
-}
-
-/**
- * RoleCard Component (Unused for now)
- * ----------------------------------------
- * Can be used later for:
- * - Selecting job_seeker / job_poster
- * - Onboarding flow
- */
-function RoleCard({
-  label,
-  description,
-  icon,
-  selected,
-  onPress,
-}: {
-  label: string
-  description: string
-  icon: string
-  selected: boolean
-  onPress: () => void
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`flex-1 p-4 rounded-2xl border-2 items-center gap-2 ${
-        selected ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'
-      }`}
-    >
-      <Text className="text-2xl">{icon}</Text>
-
-      <Text
-        className={`text-sm font-semibold ${
-          selected ? 'text-blue-700' : 'text-gray-800'
-        }`}
-      >
-        {label}
-      </Text>
-
-      <Text
-        className={`text-xs text-center ${
-          selected ? 'text-blue-500' : 'text-gray-400'
-        }`}
-      >
-        {description}
-      </Text>
-    </Pressable>
-  )
+  </View>
+)
 }

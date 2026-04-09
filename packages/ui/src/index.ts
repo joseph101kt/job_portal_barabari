@@ -15,6 +15,7 @@ export { Divider } from './components/atoms/Divider'
 export { Tag }     from './components/atoms/Tag'
 export { Toggle }  from './components/atoms/Toggle'
 export { DateInput } from './components/atoms/DateInput'
+export { RangeSlider } from './components/atoms/RangeSlider'
 
 // ── Molecules ─────────────────────────────────────────────────────────────────
 export { Card }              from './components/molecules/Card'
