@@ -24,7 +24,19 @@ export default function PosterDashboardScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [userName,   setUserName]   = useState('')
 
+  //pagination
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 5
+  const start = (page - 1) * PAGE_SIZE
+  const end = start + PAGE_SIZE
+
+  const paginatedListings = listings.slice(start, end)
+  const totalPages = Math.ceil(listings.length / PAGE_SIZE)
+
+  
+
   async function load() {
+    setPage(1)
     const { data: { user } } = await getSupabase().auth.getUser()
     if (!user) return
 
@@ -110,10 +122,6 @@ export default function PosterDashboardScreen() {
         <Divider />
 
         {/* Job listings */}
-        <SectionHeader
-          title="Your job postings"
-          action={{ label: 'View all', onPress: () => router.push('/poster/jobs') }}
-        />
 
         {listings.length === 0 ? (
           <EmptyState
@@ -127,7 +135,7 @@ export default function PosterDashboardScreen() {
           />
         ) : (
           <View className="gap-3">
-            {listings.slice(0, 5).map(listing => (
+            {paginatedListings.map(listing => (
               <Pressable
                 key={listing.id}
                 onPress={() => router.push({ pathname: '/poster/job-applicants', params: { id: listing.id } })}
@@ -190,6 +198,60 @@ export default function PosterDashboardScreen() {
                 </Card>
               </Pressable>
             ))}
+<View className="flex-row items-center justify-between mt-4 px-2">
+
+  {/* PREV */}
+  <Pressable
+    disabled={page === 1}
+    onPress={() => setPage((p) => Math.max(1, p - 1))}
+    className={`px-4 py-2 rounded-full ${
+      page === 1
+        ? 'bg-neutral-300 dark:bg-neutral-700'
+        : 'bg-blue-500 dark:bg-blue-600 active:opacity-80'
+    }`}
+  >
+    <Text
+      className={`text-sm font-medium ${
+        page === 1
+          ? 'text-neutral-500 dark:text-neutral-400'
+          : 'text-white'
+      }`}
+    >
+      ← Prev
+    </Text>
+  </Pressable>
+
+  {/* PAGE INFO */}
+  <View className="px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800">
+    <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+      {page} / {totalPages}
+    </Text>
+  </View>
+
+  {/* NEXT */}
+  <Pressable
+    disabled={page === totalPages}
+    onPress={() =>
+      setPage((p) => Math.min(totalPages, p + 1))
+    }
+    className={`px-4 py-2 rounded-full ${
+      page === totalPages
+        ? 'bg-neutral-300 dark:bg-neutral-700'
+        : 'bg-blue-500 dark:bg-blue-600 active:opacity-80'
+    }`}
+  >
+    <Text
+      className={`text-sm font-medium ${
+        page === totalPages
+          ? 'text-neutral-500 dark:text-neutral-400'
+          : 'text-white'
+      }`}
+    >
+      Next →
+    </Text>
+  </Pressable>
+
+</View>
           </View>
         )}
       </ScrollView>
