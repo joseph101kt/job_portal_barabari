@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { View, useWindowDimensions, Text } from 'react-native'
 import { getSupabase } from '@my-app/supabase'
 import { ChatSection } from './ChatSection.tsx'
@@ -27,7 +27,10 @@ export function ChatPage() {
   const [loading, setLoading] = useState(true)
   const [role, setRole] = useState<'poster' | 'seeker'>('seeker')
   const [userId, setUserId] = useState<string | null>(null)
-
+  const selectedIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    selectedIdRef.current = selectedId
+  }, [selectedId])
   // ================= FETCH CHATS =================
   const fetchChats = async () => {
     setLoading(true)
@@ -61,78 +64,66 @@ export function ChatPage() {
   }, [])
 
   // ================= REALTIME UPDATE =================
-  const handleIncomingMessage = (msg: any) => {
-    const chatId = String(msg.application_id)
-    const isMine = msg.sender_id === userId
+const handleIncomingMessage = (msg: any) => {
+  const chatId = String(msg.application_id)
+  const isMine = msg.sender_id === userId
 
-    let found = false
+  let found = false
 
-    // ✅ ACTIVE CHATS
-    setActiveChats((prevActive) => {
-      const exists = prevActive.find(
-        (c) => String(c.id) === chatId
+  setActiveChats((prevActive) => {
+    const exists = prevActive.find((c) => String(c.id) === chatId)
+    if (!exists) return prevActive
+
+    found = true
+
+    return prevActive
+      .map((chat) =>
+        String(chat.id) === chatId
+          ? {
+              ...chat,
+              lastMessage: msg.content,
+              lastMessageAt: msg.created_at,
+              unreadCount:
+                selectedIdRef.current === chatId  // ← ref, not state
+                  ? 0
+                  : isMine
+                  ? chat.unreadCount || 0
+                  : (chat.unreadCount || 0) + 1,
+            }
+          : chat
       )
-
-      if (!exists) return prevActive
-
-      found = true
-
-      return prevActive
-        .map((chat) =>
-          String(chat.id) === chatId
-            ? {
-                ...chat,
-                lastMessage: msg.content,
-                lastMessageAt: msg.created_at,
-
-                unreadCount:
-                  selectedId === chatId
-                    ? 0
-                    : isMine
-                    ? chat.unreadCount || 0
-                    : (chat.unreadCount || 0) + 1,
-              }
-            : chat
-        )
-        .sort((a, b) =>
-          (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
-        )
-    })
-
-    // ✅ INACTIVE → ACTIVE
-    setInactiveChats((prevInactive) => {
-      const chat = prevInactive.find(
-        (c) => String(c.id) === chatId
+      .sort((a, b) =>
+        (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
       )
+  })
 
-      if (!chat) return prevInactive
+  setInactiveChats((prevInactive) => {
+    const chat = prevInactive.find((c) => String(c.id) === chatId)
+    if (!chat) return prevInactive
 
-      found = true
+    found = true
 
-      const updatedChat: ChatItem = {
-        ...chat,
-        lastMessage: msg.content,
-        lastMessageAt: msg.created_at,
-        unreadCount:
-          selectedId === chatId || isMine ? 0 : 1,
-      }
-
-      setActiveChats((prev) =>
-        [updatedChat, ...prev].sort((a, b) =>
-          (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
-        )
-      )
-
-      return prevInactive.filter(
-        (c) => String(c.id) !== chatId
-      )
-    })
-
-    // ❌ REMOVED fetchChats fallback (caused flashing)
-    if (!found) {
-      console.warn('Message for unknown chat:', msg)
+    const updatedChat: ChatItem = {
+      ...chat,
+      lastMessage: msg.content,
+      lastMessageAt: msg.created_at,
+      unreadCount:
+        selectedIdRef.current === chatId || isMine ? 0 : 1,  // ← ref
     }
+
+    setActiveChats((prev) =>
+      [updatedChat, ...prev].sort((a, b) =>
+        (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')
+      )
+    )
+
+    return prevInactive.filter((c) => String(c.id) !== chatId)
+  })
+
+  if (!found) {
+    console.warn('Message for unknown chat:', msg)
   }
+}
 
   // ================= HANDLE SELECT =================
   const handleSelect = async (id: string, isInactive?: boolean) => {
