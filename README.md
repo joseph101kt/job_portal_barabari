@@ -77,16 +77,6 @@ Used for:
 
 ---
 
-## 🧾 Development Rules
-
-- No Alert.alert
-- Always use Toasts
-- Always validate before API
-- Always log during development
-- Handle all edge cases
-
----
-
 ## 🧪 Run Locally
 
 yarn install  

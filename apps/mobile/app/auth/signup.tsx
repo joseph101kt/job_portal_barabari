@@ -108,58 +108,61 @@ export default function SignupScreen() {
   // UI
   // ─────────────────────────────────────────────
 return (
-  <View className="flex-1 justify-center px-6 bg-white dark:bg-black">
-    <Stack.Screen options={{ title: 'SignUp' }} />
+  <View className="flex-1 justify-center bg-white dark:bg-black px-6">
+    <Stack.Screen options={{ title: 'Sign Up' }} />
 
-    {/* Header */}
-    <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-      Create account
-    </Text>
-    <Text className="text-base text-gray-500 dark:text-gray-400 mb-8">
-      Get started on your journey
-    </Text>
+    <View className="w-full max-w-sm self-center bg-neutral-100 dark:bg-neutral-900 rounded-3xl p-6">
 
-    <View className="gap-4">
-      {/* Email */}
-      <Input
-        label="Email"
-        placeholder="you@example.com"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+      {/* Header */}
+      <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        Create account
+      </Text>
+      <Text className="text-base text-gray-500 dark:text-gray-400 mb-8">
+        Get started on your journey
+      </Text>
 
-      {/* Password */}
-      <Input
-        label="Password"
-        placeholder="At least 6 characters"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View className="gap-4">
+        {/* Email */}
+        <Input
+          label="Email"
+          placeholder="you@example.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
-      {/* Signup Button */}
-      <Button
-        label="Create account"
-        variant="primary"
-        onPress={handleSignup}
-        loading={loading}
-        fullWidth
-      />
+        {/* Password */}
+        <Input
+          label="Password"
+          placeholder="At least 6 characters"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-      {/* Login Redirect */}
-      <Pressable
-        onPress={() => router.push('/auth/login')}
-        className="items-center"
-      >
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
-          Already have an account?{' '}
-          <Text className="text-blue-600 dark:text-blue-400 font-medium">
-            Sign in
+        {/* Signup Button */}
+        <Button
+          label="Create account"
+          variant="primary"
+          onPress={handleSignup}
+          loading={loading}
+          fullWidth
+        />
+
+        {/* Login Redirect */}
+        <Pressable
+          onPress={() => router.push('/auth/login')}
+          className="items-center mt-2"
+        >
+          <Text className="text-sm text-gray-500 dark:text-gray-400">
+            Already have an account?{' '}
+            <Text className="text-blue-600 dark:text-blue-400 font-medium">
+              Sign in
+            </Text>
           </Text>
-        </Text>
-      </Pressable>
+        </Pressable>
+      </View>
     </View>
   </View>
 )
